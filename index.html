@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מערכת ניהול עסקית מתקדמת</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="settings-btn" onclick="switchTab('settings')">⚙️ הגדרות</button>
+            <h1>🏢 מערכת ניהול עסקית מתקדמת</h1>
+            <p>ניהול הוצאות, תמחור מוצרים ומעקב הזמנות</p>
+        </div>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="switchTab('expenses')">💰 הכנסות והוצאות</button>
+            <button class="nav-tab" onclick="switchTab('pricing')">💎 תמחור מוצרים</button>
+            <button class="nav-tab" onclick="switchTab('orders')">📦 ניהול הזמנות</button>
+        </div>
+
+        <div class="content">
+            <!-- Settings Section -->
+            <div id="settings" class="section">
+                <div class="settings-panel">
+                    <h2>הגדרות מערכת</h2>
+                    
+                    <div class="settings-section">
+                        <h3>קבועים לחישוב מחירים</h3>
+                        
+                        <div class="settings-row">
+                            <label>מע"מ (%):</label>
+                            <input type="number" id="vatRate" value="17" step="0.1" onchange="saveSettings()">
+                        </div>
+                        
+                        <div class="settings-row">
+                            <label>עמלת עיבוד (%):</label>
+                            <input type="number" id="processingFee" value="2.5" step="0.1" onchange="saveSettings()">
+                        </div>
+                        
+                        <div class="settings-row">
+                            <label>עלות אריזה (₪):</label>
+                            <input type="number" id="packagingCost" value="15" onchange="saveSettings()">
+                        </div>
+                        
+                        <div class="settings-row">
+                            <label>עלויות קבועות (₪):</label>
+                            <input type="number" id="fixedCosts" value="50" onchange="saveSettings()">
+                        </div>
+                        
+                        <div class="settings-row">
+                            <label>תעריף שעת עבודה (₪):</label>
+                            <input type="number" id="laborHourRate" value="100" onchange="saveSettings()">
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>מחירי חומרים (₪ לגרם)</h3>
+                        
+                        <div class="settings-row">
+                            <label>14K זהב:</label>
+                            <input type="number" id="price_14k" value="230" onchange="saveSettings()">
+                        </div>
+                        
+                        <div class="settings-row">
+                            <label>כסף:</label>
+                            <input type="number" id="price_silver" value="8" onchange="saveSettings()">
+                        </div>
+                        
+                        <div class="settings-row">
+                            <label>כסף יציקה:</label>
+                            <input type="number" id="price_silver_cast" value="8" onchange="saveSettings()">
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>זמני עבודה (שעות)</h3>
+                        
+                        <div class="settings-row">
+                            <label>14K זהב:</label>
+                            <input type="number" id="time_14k" value="2" step="0.5" onchange="saveSettings()">
+                        </div>
+                        
+                        <div class="settings-row">
+                            <label>כסף:</label>
+                            <input type="number" id="time_silver" value="1.5" step="0.5" onchange="saveSettings()">
+                        </div>
+                        
+                        <div class="settings-row">
+                            <label>ציפוי:</label>
+                            <input type="number" id="time_plating" value="1" step="0.5" onchange="saveSettings()">
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>מכפילי רווח</h3>
+                        
+                        <div class="settings-row">
+                            <label>14K זהב:</label>
+                            <input type="number" id="profit_14k" value="1.53" step="0.01" onchange="saveSettings()">
+                        </div>
+                        
+                        <div class="settings-row">
+                            <label>כסף:</label>
+                            <input type="number" id="profit_silver" value="1.77" step="0.01" onchange="saveSettings()">
+                        </div>
+                        
+                        <div class="settings-row">
+                            <label>ציפוי:</label>
+                            <input type="number" id="profit_plating" value="1.60" step="0.01" onchange="saveSettings()">
+                        </div>
+                    </div>
+
+                    <button onclick="saveSettings()">💾 שמור הגדרות</button>
+                    <span id="settingsSaved" style="color: green; display: none; margin-right: 10px;">✅ נשמר!</span>
+                </div>
+            </div>
+
+            <!-- Expenses Section -->
+            <div id="expenses" class="section active">
+                <div class="filters">
+                    <div class="filter-group">
+                        <label>שנה:</label>
+                        <select id="expenseYear" onchange="loadExpenseData()">
+                            <option value="2025">2025</option>
+                            <option value="2024">2024</option>
+                            <option value="2023">2023</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>חודש:</label>
+                        <select id="expenseMonth" onchange="loadExpenseData()">
+                            <option value="0">כל השנה</option>
+                            <option value="1">ינואר</option>
+                            <option value="2">פברואר</option>
+                            <option value="3">מרץ</option>
+                            <option value="4">אפריל</option>
+                            <option value="5">מאי</option>
+                            <option value="6">יוני</option>
+                            <option value="7">יולי</option>
+                            <option value="8">אוגוסט</option>
+                            <option value="9">ספטמבר</option>
+                            <option value="10">אוקטובר</option>
+                            <option value="11">נובמבר</option>
+                            <option value="12">דצמבר</option>
+                        </select>
+                    </div>
+                    <button onclick="showAddExpenseModal()">➕ הוסף רשומה</button>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalIncome">₪0</div>
+                        <div class="stat-label">סה"כ הכנסות</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalExpenses">₪0</div>
+                        <div class="stat-label">סה"כ הוצאות</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="netProfit">₪0</div>
+                        <div class="stat-label">רווח נקי</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="profitMargin">0%</div>
+                        <div class="stat-label">אחוז רווח</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalSalaryFromHours">₪0</div>
+                        <div class="stat-label">משכורת מחושבת</div>
+                    </div>
+                </div>
+
+
+
+                <div class="card">
+                    <div class="card-header">רשימת הכנסות והוצאות</div>
+                    <table id="expenseTable">
+                        <thead>
+                            <tr>
+                                <th>תאריך</th>
+                                <th>סוג</th>
+                                <th>קטגוריה</th>
+                                <th>תיאור</th>
+                                <th>סכום</th>
+                                <th>שעות עבודה</th>
+                                <th>חוזר</th>
+                                <th>פעולות</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Pricing Section -->
+            <div id="pricing" class="section">
+                <div class="card">
+                    <div class="card-header">מחשבון תמחור מוצרים</div>
+                    
+                    <div class="form-row">
+                        <div>
+                            <label>סוג מוצר:</label>
+                            <select id="productType">
+                                <option value="טבעת">טבעת</option>
+                                <option value="עגילים">עגילים</option>
+                                <option value="שרשרת">שרשרת</option>
+                                <option value="צמיד">צמיד</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>חומר:</label>
+                            <select id="material" onchange="updatePricing()">
+                                <option value="14K זהב">14K זהב</option>
+                                <option value="כסף">כסף</option>
+                                <option value="כסף יציקה">כסף יציקה</option>
+                                <option value="ציפוי- כסף">ציפוי כסף</option>
+                                <option value="ציפוי- יציקה">ציפוי יציקה</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>משקל (גרם):</label>
+                            <input type="number" id="weight" step="0.1" onchange="updatePricing()">
+                        </div>
+                    </div>
+
+                    <div class="price-display">
+                        <div class="price-item">
+                            <span>עלות חומר:</span>
+                            <span id="materialCost">₪0</span>
+                        </div>
+                        <div class="price-item">
+                            <span>עלות עבודה:</span>
+                            <span id="laborCost">₪0</span>
+                        </div>
+                        <div class="price-item">
+                            <span>עלויות קבועות:</span>
+                            <span id="fixedCostDisplay">₪0</span>
+                        </div>
+                        <div class="price-item">
+                            <span>סה"כ עלות:</span>
+                            <span id="totalCost">₪0</span>
+                        </div>
+                        <div class="price-item">
+                            <span>מחיר מומלץ:</span>
+                            <span id="recommendedPrice">₪0</span>
+                        </div>
+                    </div>
+
+                    <div class="discount-calculator">
+                        <h4>מחשבון הנחות</h4>
+                        <div class="discount-input">
+                            <label>הנחה (%):</label>
+                            <input type="number" id="discountPercent" min="0" max="100" onchange="calculateDiscount()">
+                            <span>מחיר אחרי הנחה: <strong id="discountedPrice">₪0</strong></span>
+                        </div>
+                    </div>
+
+                    <button onclick="addToProducts()">➕ הוסף למוצרים</button>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        רשימת מוצרים
+                        <button onclick="showAddProductModal()" style="float: left;">➕ הוסף מוצר</button>
+                    </div>
+                    <table id="productsTable">
+                        <thead>
+                            <tr>
+                                <th>סוג</th>
+                                <th>שם</th>
+                                <th>חומר</th>
+                                <th>עלות</th>
+                                <th>מחיר מחושב</th>
+                                <th>מחיר באתר</th>
+                                <th>רווח (%)</th>
+                                <th>פעולות</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Orders Section -->
+            <div id="orders" class="section">
+                <div class="filters">
+                    <div class="filter-group">
+                        <label>חודש:</label>
+                        <select id="orderMonth" onchange="loadOrders()">
+                            <option value="0">כל החודשים</option>
+                            <option value="1">ינואר</option>
+                            <option value="2">פברואר</option>
+                            <option value="3">מרץ</option>
+                            <option value="4">אפריל</option>
+                            <option value="5">מאי</option>
+                            <option value="6">יוני</option>
+                            <option value="7">יולי</option>
+                            <option value="8">אוגוסט</option>
+                            <option value="9">ספטמבר</option>
+                            <option value="10">אוקטובר</option>
+                            <option value="11">נובמבר</option>
+                            <option value="12">דצמבר</option>
+                        </select>
+                    </div>
+                    <button onclick="showAddOrderModal()">➕ הזמנה חדשה</button>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">ניהול הזמנות</div>
+                    <table id="ordersTable">
+                        <thead>
+                            <tr>
+                                <th>מספר הזמנה</th>
+                                <th>תאריך</th>
+                                <th>לקוח</th>
+                                <th>מוצרים</th>
+                                <th>סכום</th>
+                                <th>קבלה</th>
+                                <th>סטטוס</th>
+                                <th>פעולות</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="addExpenseModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">הוספת רשומה חדשה</div>
+            <form id="addExpenseForm">
+                <div class="form-group">
+                    <label>סוג:</label>
+                    <select id="expenseType" required>
+                        <option value="income">הכנסה</option>
+                        <option value="expense">הוצאה</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>קטגוריה:</label>
+                    <select id="expenseCategory" required>
+                        <option value="">בחר קטגוריה</option>
+                        <option value="fixed">הוצאות קבועות</option>
+                        <option value="variable">הוצאות משתנות</option>
+                        <option value="general">הוצאות כלליות</option>
+                        <option value="sales">מכירות</option>
+                        <option value="other">אחר</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>תיאור:</label>
+                    <input type="text" id="expenseDescription" required>
+                </div>
+                <div class="form-group">
+                    <label>סכום:</label>
+                    <input type="number" id="expenseAmount" min="0" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label>תאריך:</label>
+                    <input type="date" id="expenseDate" required>
+                </div>
+                <div class="form-group" id="workHoursGroup" style="display: none;">
+                    <label>שעות עבודה:</label>
+                    <input type="number" id="expenseWorkHours" min="0" step="0.5" placeholder="הכנס מספר שעות">
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="isRecurring">
+                        הוצאה חוזרת חודשית
+                    </label>
+                </div>
+                <div class="form-group" id="recurringMonths" style="display: none;">
+                    <label>מספר חודשים לחזרה:</label>
+                    <input type="number" id="recurringMonthsCount" min="1" max="12" value="12">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" onclick="closeModal('addExpenseModal')" class="btn-secondary">ביטול</button>
+                    <button type="submit">הוסף</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="editExpenseModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">עריכת רשומה</div>
+            <form id="editExpenseForm">
+                <input type="hidden" id="editExpenseId">
+                <div class="form-group">
+                    <label>סוג:</label>
+                    <select id="editExpenseType" required>
+                        <option value="income">הכנסה</option>
+                        <option value="expense">הוצאה</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>קטגוריה:</label>
+                    <select id="editExpenseCategory" required>
+                        <option value="">בחר קטגוריה</option>
+                        <option value="fixed">הוצאות קבועות</option>
+                        <option value="variable">הוצאות משתנות</option>
+                        <option value="general">הוצאות כלליות</option>
+                        <option value="sales">מכירות</option>
+                        <option value="other">אחר</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>תיאור:</label>
+                    <input type="text" id="editExpenseDescription" required>
+                </div>
+                <div class="form-group">
+                    <label>סכום:</label>
+                    <input type="number" id="editExpenseAmount" min="0" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label>תאריך:</label>
+                    <input type="date" id="editExpenseDate" required>
+                </div>
+                <div class="form-group" id="editWorkHoursGroup" style="display: none;">
+                    <label>שעות עבודה:</label>
+                    <input type="number" id="editExpenseWorkHours" min="0" step="0.5" placeholder="הכנס מספר שעות">
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="editIsRecurring">
+                        הוצאה חוזרת חודשית
+                    </label>
+                </div>
+                <div class="form-group" id="editRecurringMonths" style="display: none;">
+                    <label>מספר חודשים לחזרה:</label>
+                    <input type="number" id="editRecurringMonthsCount" min="1" max="12" value="12">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" onclick="closeModal('editExpenseModal')" class="btn-secondary">ביטול</button>
+                    <button type="submit">עדכן</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="addProductModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">הוספת מוצר חדש</div>
+            <form id="addProductForm">
+                <div class="form-group">
+                    <label>סוג מוצר:</label>
+                    <select id="newProductType" required>
+                        <option value="">בחר סוג</option>
+                        <option value="טבעת">טבעת</option>
+                        <option value="עגילים">עגילים</option>
+                        <option value="שרשרת">שרשרת</option>
+                        <option value="צמיד">צמיד</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>שם דגם:</label>
+                    <input type="text" id="newProductName" required>
+                </div>
+                <div class="form-group">
+                    <label>חומר:</label>
+                    <select id="newProductMaterial" required>
+                        <option value="">בחר חומר</option>
+                        <option value="14K זהב">14K זהב</option>
+                        <option value="כסף">כסף</option>
+                        <option value="כסף יציקה">כסף יציקה</option>
+                        <option value="ציפוי- כסף">ציפוי כסף</option>
+                        <option value="ציפוי- יציקה">ציפוי יציקה</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>עלות ייצור:</label>
+                    <input type="number" id="newProductCost" min="0" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label>מחיר מחושב:</label>
+                    <input type="number" id="newProductPrice" min="0" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label>מחיר באתר:</label>
+                    <input type="number" id="newProductSitePrice" min="0" step="0.01" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" onclick="closeModal('addProductModal')" class="btn-secondary">ביטול</button>
+                    <button type="submit">הוסף מוצר</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="editProductModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">עריכת מוצר</div>
+            <form id="editProductForm">
+                <input type="hidden" id="editProductId">
+                <div class="form-group">
+                    <label>סוג מוצר:</label>
+                    <select id="editProductType" required>
+                        <option value="">בחר סוג</option>
+                        <option value="טבעת">טבעת</option>
+                        <option value="עגילים">עגילים</option>
+                        <option value="שרשרת">שרשרת</option>
+                        <option value="צמיד">צמיד</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>שם דגם:</label>
+                    <input type="text" id="editProductName" required>
+                </div>
+                <div class="form-group">
+                    <label>חומר:</label>
+                    <select id="editProductMaterial" required>
+                        <option value="">בחר חומר</option>
+                        <option value="14K זהב">14K זהב</option>
+                        <option value="כסף">כסף</option>
+                        <option value="כסף יציקה">כסף יציקה</option>
+                        <option value="ציפוי- כסף">ציפוי כסף</option>
+                        <option value="ציפוי- יציקה">ציפוי יציקה</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>עלות ייצור:</label>
+                    <input type="number" id="editProductCost" min="0" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label>מחיר מחושב:</label>
+                    <input type="number" id="editProductPrice" min="0" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label>מחיר באתר:</label>
+                    <input type="number" id="editProductSitePrice" min="0" step="0.01" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" onclick="closeModal('editProductModal')" class="btn-secondary">ביטול</button>
+                    <button type="submit">עדכן מוצר</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="addOrderModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">הזמנה חדשה</div>
+            <form id="addOrderForm">
+                <div class="form-group">
+                    <label>שם הלקוח:</label>
+                    <input type="text" id="customerName" required>
+                </div>
+                <div class="form-group">
+                    <label>מוצרים:</label>
+                    <textarea id="orderProducts" rows="3" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>סכום:</label>
+                    <input type="number" id="orderAmount" min="0" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="receiptSent">
+                        קבלה נשלחה
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>הערות:</label>
+                    <textarea id="orderNotes" rows="2"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" onclick="closeModal('addOrderModal')" class="btn-secondary">ביטול</button>
+                    <button type="submit">הוסף הזמנה</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modular core and domain scripts (placeholders) -->
+    <script src="js/core/constants.js"></script>
+    <script src="js/core/utils/date.util.js"></script>
+    <script src="js/core/utils/currency.util.js"></script>
+    <script src="js/core/utils/dom.util.js"></script>
+    <script src="js/core/storage/storage.service.js"></script>
+    <script src="js/core/storage/settings.service.js"></script>
+    <script src="js/glue/app.state.js"></script>
+    <script src="js/domain/models/Expense.js"></script>
+    <script src="js/domain/models/Product.js"></script>
+    <script src="js/domain/models/Order.js"></script>
+    <script src="js/domain/repositories/expense.repository.js"></script>
+    <script src="js/domain/repositories/product.repository.js"></script>
+    <script src="js/domain/repositories/order.repository.js"></script>
+    <script src="js/features/products/products.manager.js"></script>
+    <script src="js/features/orders/orders.manager.js"></script>
+    <script src="js/features/expenses/expenses.manager.js"></script>
+    <script src="js/app.bootstrap.js"></script>
+    <!-- Existing app remains the source of truth -->
+    <script src="js/app.js"></script>
+</body>
+</html>
