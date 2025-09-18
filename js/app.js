@@ -21,19 +21,29 @@ function initializeSettings() {
         laborHourRate: 100,
         salaryHourRate: 50,
         materialPrices: {
-            '14k': 230,
-            'silver': 8,
-            'silver_cast': 8
+            'כסף': 6,
+            'זהב 14K': 270,
+            'ציפוי זהב': 10,
+            'יציקה כסף': 9,
+            'יציקה ציפוי זהב': 10
         },
         laborTime: {
-            '14k': 2,
-            'silver': 1.5,
-            'plating': 1
+            'כסף': 1,
+            'זהב 14K': 1.875,
+            'ציפוי זהב': 1,
+            'יציקה כסף': 1,
+            'יציקה ציפוי זהב': 1
         },
         profitMultiplier: {
-            '14k': 1.53,
-            'silver': 1.77,
-            'plating': 1.60
+            'כסף': 1.5,
+            'זהב 14K': 1.3,
+            'ציפוי זהב': 1.5,
+            'יציקה כסף': 1.5,
+            'יציקה ציפוי זהב': 1.5
+        },
+        conversionRatio: {
+            'כסף': 10.4,
+            'זהב 14K': 13.4
         }
     };
     if (window.App && App.SettingsService && typeof App.SettingsService.mergeDefaults === 'function') {
@@ -45,24 +55,527 @@ function initializeSettings() {
     loadSettingsToUI();
 }
 
+// Collections Management Functions
+function getAllCollections() {
+    const stored = localStorage.getItem('collections');
+    if (stored) {
+        try {
+            const parsed = JSON.parse(stored);
+            // Ensure permanent collections are always present
+            const permanent = getPermanentCollections();
+            const combined = [...new Set([...permanent, ...parsed])];
+            return combined;
+        } catch (e) {
+            console.warn('Failed to parse stored collections, reinitializing:', e);
+            const permanent = getPermanentCollections();
+            saveCollections(permanent);
+            return permanent;
+        }
+    } else {
+        // Initialize with permanent collections if none exist
+        const permanent = getPermanentCollections();
+        saveCollections(permanent);
+        return permanent;
+    }
+}
+
+function getEditableCollections() {
+    const collections = getAllCollections();
+    // Return only editable collections (exclude permanent ones)
+    return collections.filter(c => c !== 'הזמנה אישית' && c !== 'כללי');
+}
+
+function getPermanentCollections() {
+    return ['כללי', 'הזמנה אישית'];
+}
+
+function saveCollections(collections) {
+    // Ensure permanent collections are always included
+    const permanentCollections = getPermanentCollections();
+    const filtered = collections.filter(c => !permanentCollections.includes(c));
+    const finalCollections = [...permanentCollections, ...filtered];
+    localStorage.setItem('collections', JSON.stringify(finalCollections));
+}
+
+function addCollection() {
+    const input = document.getElementById('newCollectionName');
+    if (!input) return;
+    
+    const name = input.value.trim();
+    if (!name) {
+        alert('אנא הכנס שם קולקציה');
+        return;
+    }
+    
+    const collections = getAllCollections();
+    if (collections.includes(name)) {
+        alert('קולקציה זו כבר קיימת');
+        return;
+    }
+    
+    collections.push(name);
+    saveCollections(collections);
+    input.value = '';
+    
+    // Show success feedback
+    const successMsg = document.createElement('span');
+    successMsg.textContent = '✅ הקולקציה נוספה בהצלחה';
+    successMsg.style.color = 'green';
+    successMsg.style.fontSize = '12px';
+    successMsg.style.marginRight = '8px';
+    input.parentNode.appendChild(successMsg);
+    setTimeout(() => successMsg.remove(), 2000);
+    
+    // Re-render both sections
+    renderCollectionsManager();
+    renderCollectionsChecklist();
+}
+
+function renameCollection(oldName, newName) {
+    if (!newName || !newName.trim()) return;
+    
+    const collections = getAllCollections();
+    const index = collections.indexOf(oldName);
+    if (index === -1) return;
+    
+    if (collections.includes(newName.trim()) && newName.trim() !== oldName) {
+        alert('קולקציה בשם זה כבר קיימת');
+        return;
+    }
+    
+    collections[index] = newName.trim();
+    saveCollections(collections);
+    renderCollectionsManager();
+    renderCollectionsChecklist();
+}
+
+function deleteCollection(name) {
+    const permanentCollections = getPermanentCollections();
+    if (permanentCollections.includes(name)) {
+        alert(`לא ניתן למחוק את הקולקציה "${name}"`);
+        return;
+    }
+    
+    if (!confirm(`האם אתה בטוח שברצונך למחוק את הקולקציה "${name}"?`)) {
+        return;
+    }
+    
+    const collections = getAllCollections().filter(c => c !== name);
+    saveCollections(collections);
+    renderCollectionsManager();
+    renderCollectionsChecklist();
+}
+
+function renderCollectionsManager() {
+    const container = document.getElementById('collectionsManagerList');
+    if (!container) return;
+    
+    const editableCollections = getEditableCollections();
+    const permanentCollections = getPermanentCollections();
+    container.innerHTML = '';
+    
+    // קולקציות קבועות
+    const permanentSection = document.createElement('div');
+    permanentSection.style.marginBottom = '16px';
+    
+    const permanentLabel = document.createElement('div');
+    permanentLabel.textContent = 'קולקציות קבועות:';
+    permanentLabel.style.fontSize = '13px';
+    permanentLabel.style.fontWeight = 'bold';
+    permanentLabel.style.marginBottom = '8px';
+    permanentLabel.style.color = '#333';
+    
+    const permanentList = document.createElement('div');
+    permanentList.style.border = '1px solid #ddd';
+    permanentList.style.borderRadius = '4px';
+    permanentList.style.backgroundColor = '#f8f9fa';
+    
+    permanentCollections.forEach((name, index) => {
+        const item = document.createElement('div');
+        item.textContent = name;
+        item.style.padding = '8px 12px';
+        item.style.fontSize = '13px';
+        item.style.borderBottom = index < permanentCollections.length - 1 ? '1px solid #eee' : 'none';
+        permanentList.appendChild(item);
+    });
+    
+    permanentSection.appendChild(permanentLabel);
+    permanentSection.appendChild(permanentList);
+    container.appendChild(permanentSection);
+    
+    // קולקציות לעריכה
+    const editableSection = document.createElement('div');
+    
+    const editableLabel = document.createElement('div');
+    editableLabel.textContent = 'קולקציות נוספות:';
+    editableLabel.style.fontSize = '13px';
+    editableLabel.style.fontWeight = 'bold';
+    editableLabel.style.marginBottom = '8px';
+    editableLabel.style.color = '#333';
+    
+    if (editableCollections.length === 0) {
+        const emptyMsg = document.createElement('div');
+        emptyMsg.textContent = 'אין קולקציות נוספות';
+        emptyMsg.style.padding = '12px';
+        emptyMsg.style.textAlign = 'center';
+        emptyMsg.style.color = '#666';
+        emptyMsg.style.fontSize = '12px';
+        emptyMsg.style.border = '1px dashed #ccc';
+        emptyMsg.style.borderRadius = '4px';
+        editableSection.appendChild(editableLabel);
+        editableSection.appendChild(emptyMsg);
+    } else {
+        const editableDropdown = document.createElement('select');
+        editableDropdown.style.width = '100%';
+        editableDropdown.style.padding = '6px 8px';
+        editableDropdown.style.border = '1px solid #ddd';
+        editableDropdown.style.borderRadius = '4px';
+        editableDropdown.style.fontSize = '13px';
+        editableDropdown.style.marginBottom = '8px';
+        
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = 'בחר קולקציה לעריכה...';
+        editableDropdown.appendChild(defaultOption);
+        
+        editableCollections.forEach(name => {
+            const option = document.createElement('option');
+            option.value = name;
+            option.textContent = name;
+            editableDropdown.appendChild(option);
+        });
+        
+        const actionsDiv = document.createElement('div');
+        actionsDiv.style.display = 'flex';
+        actionsDiv.style.gap = '8px';
+        
+        const renameBtn = document.createElement('button');
+        renameBtn.textContent = 'שנה שם';
+        renameBtn.className = 'btn-small';
+        renameBtn.disabled = true;
+        
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = 'מחק';
+        deleteBtn.className = 'btn-small btn-danger';
+        deleteBtn.disabled = true;
+        
+        editableDropdown.addEventListener('change', () => {
+            const selected = editableDropdown.value;
+            renameBtn.disabled = !selected;
+            deleteBtn.disabled = !selected;
+        });
+        
+        renameBtn.onclick = () => {
+            const selected = editableDropdown.value;
+            if (selected) {
+                const newName = prompt('שם חדש לקולקציה:', selected);
+                if (newName !== null && newName.trim() !== selected) {
+                    renameCollection(selected, newName.trim());
+                }
+            }
+        };
+        
+        deleteBtn.onclick = () => {
+            const selected = editableDropdown.value;
+            if (selected) {
+                deleteCollection(selected);
+            }
+        };
+        
+        actionsDiv.appendChild(renameBtn);
+        actionsDiv.appendChild(deleteBtn);
+        
+        editableSection.appendChild(editableLabel);
+        editableSection.appendChild(editableDropdown);
+        editableSection.appendChild(actionsDiv);
+    }
+    
+    container.appendChild(editableSection);
+}
+
+// Collections checklist render: simple native dropdown (single select) listing all collections
+function renderCollectionsChecklist() {
+    const container = document.getElementById('collectionsChecklist');
+    if (!container) {
+        console.log('collectionsChecklist container not found');
+        return;
+    }
+    
+    console.log('Rendering collections checklist...');
+    container.innerHTML = '';
+
+    // Cleanup any previous floating assets/handlers
+    const prevPanel = document.getElementById('collectionsPanelFloating');
+    if (prevPanel) prevPanel.remove();
+    if (window.__collectionsOutsideHandler) {
+        document.removeEventListener('click', window.__collectionsOutsideHandler);
+        window.__collectionsOutsideHandler = null;
+    }
+    if (window.__collectionsRepositionHandler) {
+        window.removeEventListener('scroll', window.__collectionsRepositionHandler, true);
+        window.removeEventListener('resize', window.__collectionsRepositionHandler);
+        window.__collectionsRepositionHandler = null;
+    }
+
+    // Hidden input to persist selection for product saving (as array with one item)
+    const hidden = document.createElement('input');
+    hidden.type = 'hidden';
+    hidden.id = 'collectionsSelectedHidden';
+
+    // Visual facade styled like a native select (for reliable custom toggling)
+    const facade = document.createElement('div');
+    facade.style.width = '100%';
+    facade.style.padding = '6px 8px';
+    facade.style.border = '1px solid #ddd';
+    facade.style.borderRadius = '4px';
+    facade.style.fontSize = '13px';
+    facade.style.backgroundColor = '#fff';
+    facade.style.cursor = 'pointer';
+    facade.style.display = 'flex';
+    facade.style.alignItems = 'center';
+    facade.style.justifyContent = 'space-between';
+    facade.tabIndex = 0;
+    facade.setAttribute('role', 'button');
+    facade.setAttribute('aria-expanded', 'false');
+    
+    const facadeLabel = document.createElement('span');
+    const facadeArrow = document.createElement('span');
+    facadeArrow.textContent = '▼';
+    facadeArrow.style.color = '#666';
+    facade.appendChild(facadeLabel);
+    facade.appendChild(facadeArrow);
+
+    const all = getAllCollections();
+    // Ensure 'כללי' is present first
+    const ordered = Array.from(new Set(['כללי', ...all]));
+
+    // Initialize facade label
+    facadeLabel.textContent = 'כללי';
+
+    // Build floating panel with checkboxes for multi-select (keeps the same select visual)
+    const panel = document.createElement('div');
+    panel.id = 'collectionsPanelFloating';
+    panel.style.display = 'none';
+    panel.style.position = 'absolute';
+    panel.style.backgroundColor = '#fff';
+    panel.style.border = '2px solid #667eea';
+    panel.style.borderRadius = '8px';
+    panel.style.zIndex = '9999';
+    panel.style.maxHeight = '250px';
+    panel.style.width = '100%';
+    panel.style.minWidth = '300px';
+    panel.style.overflowY = 'auto';
+    panel.style.boxShadow = '0 8px 16px rgba(0,0,0,0.2)';
+    panel.style.top = '100%';
+    panel.style.left = '0';
+    panel.style.right = '0';
+    panel.style.marginTop = '2px';
+
+    // Render items with checkboxes
+    ordered.forEach((name, index) => {
+        const item = document.createElement('label');
+        item.style.display = 'flex';
+        item.style.alignItems = 'center';
+        item.style.gap = '12px';
+        item.style.padding = '12px 16px';
+        item.style.cursor = 'pointer';
+        item.style.fontSize = '14px';
+        item.style.fontWeight = '500';
+        item.style.borderBottom = index < ordered.length - 1 ? '1px solid #e9ecef' : 'none';
+        item.style.transition = 'background-color 0.2s';
+        
+        // Hover effect
+        item.addEventListener('mouseenter', () => {
+            item.style.backgroundColor = '#f8f9fa';
+        });
+        item.addEventListener('mouseleave', () => {
+            item.style.backgroundColor = 'transparent';
+        });
+        
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.className = 'collection-checkbox';
+        cb.value = name;
+        cb.style.width = '16px';
+        cb.style.height = '16px';
+        cb.style.accentColor = '#667eea';
+        
+        // default to 'כללי'
+        if (name === 'כללי') cb.checked = true;
+        
+        const span = document.createElement('span');
+        span.textContent = name;
+        span.style.color = '#333';
+        span.style.userSelect = 'none';
+        
+        item.appendChild(cb);
+        item.appendChild(span);
+        cb.addEventListener('change', updateSelectText);
+        panel.appendChild(item);
+    });
+
+    // Make container relative positioned so absolute panel positions correctly
+    container.style.position = 'relative';
+    // Attach reposition handlers so the panel follows the trigger
+    if (window.__collectionsRepositionHandler) {
+        window.removeEventListener('scroll', window.__collectionsRepositionHandler, true);
+        window.removeEventListener('resize', window.__collectionsRepositionHandler);
+    }
+    window.__collectionsRepositionHandler = () => {
+        if (panel.style.display === 'block') positionPanel();
+    };
+    window.addEventListener('scroll', window.__collectionsRepositionHandler, true);
+    window.addEventListener('resize', window.__collectionsRepositionHandler);
+
+    function updateSelectText() {
+        const checked = panel.querySelectorAll('input.collection-checkbox:checked');
+        const values = Array.from(checked).map(cb => cb.value);
+        if (values.length === 0) {
+            const general = panel.querySelector('input.collection-checkbox[value="כללי"]');
+            if (general) { general.checked = true; values.push('כללי'); }
+        }
+        // Update hidden
+        hidden.value = JSON.stringify(values);
+        // Update facade display
+        if (values.length === 1) {
+            facadeLabel.textContent = values[0];
+        } else {
+            facadeLabel.textContent = `נבחרו ${values.length} קולקציות`;
+        }
+    }
+
+    // Simple click handler for opening/closing the panel
+    function togglePanel(e) {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        console.log('Toggle panel clicked');
+        const open = panel.style.display === 'block';
+        if (!open) {
+            console.log('Opening panel');
+            panel.style.display = 'block';
+            facade.setAttribute('aria-expanded', 'true');
+        } else {
+            console.log('Closing panel');
+            panel.style.display = 'none';
+            facade.setAttribute('aria-expanded', 'false');
+        }
+    }
+    
+    // Use simple click events
+    facade.addEventListener('click', togglePanel);
+    
+    // Keyboard support
+    facade.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            togglePanel(e);
+        }
+    });
+
+    // Close on outside click
+    if (window.__collectionsOutsideHandler) {
+        document.removeEventListener('click', window.__collectionsOutsideHandler);
+    }
+    window.__collectionsOutsideHandler = (e) => {
+        if (!panel.contains(e.target) && !container.contains(e.target)) {
+            panel.style.display = 'none';
+        }
+    };
+    document.addEventListener('click', window.__collectionsOutsideHandler);
+
+    // Mount and initial state
+    updateSelectText();
+    container.appendChild(facade);
+    container.appendChild(panel);
+    container.appendChild(hidden);
+}
+
+// Initialize collections on page load
+function initializeCollections() {
+    // Ensure collections are initialized with permanent ones
+    getAllCollections();
+    // Render both sections
+    renderCollectionsManager();
+    renderCollectionsChecklist();
+}
+
+// Auto-initialize when DOM is ready and scroll to top
+function onPageLoad() {
+    // Scroll to top of page
+    window.scrollTo(0, 0);
+    // Initialize collections
+    initializeCollections();
+    // Initialize order manager if it exists
+    if (window.App && App.Managers && App.Managers.orderManager) {
+        App.Managers.orderManager.initializeOrderForm();
+    }
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', onPageLoad);
+} else {
+    onPageLoad();
+}
+
+// Expose collection functions to window to ensure inline handlers work
+window.addCollection = addCollection;
+window.renameCollection = renameCollection;
+window.deleteCollection = deleteCollection;
+window.renderCollectionsManager = renderCollectionsManager;
+window.renderCollectionsChecklist = renderCollectionsChecklist;
+window.initializeCollections = initializeCollections;
+
+// Keep site price synced with recommended price always
+function syncSitePriceDefault(recommendedPrice) {
+    const input = document.getElementById('sitePriceInput');
+    if (!input) return;
+    // Always sync site price with recommended price
+    input.value = (recommendedPrice || 0).toFixed(2);
+    input.placeholder = `ברירת מחדל: ${(recommendedPrice || 0).toFixed(2)}₪`;
+}
+
+// Mark manual changes to site price but still allow auto-sync on pricing changes
+document.addEventListener('input', (e) => {
+    if (e.target && e.target.id === 'sitePriceInput') {
+        // Recalculate profit when site price changes manually
+        calculateDiscount();
+    }
+});
+
+// Function to reset site price when starting new product calculation
+function resetSitePriceToDefault() {
+    const input = document.getElementById('sitePriceInput');
+    if (input) {
+        input.value = '';
+        input.placeholder = 'ברירת מחדל: מחיר מומלץ';
+    }
+}
+
 function loadSettingsToUI() {
-    document.getElementById('vatRate').value = (settings.vatRate * 100).toFixed(1);
-    document.getElementById('processingFee').value = (settings.processingFee * 100).toFixed(1);
-    document.getElementById('packagingCost').value = settings.packagingCost;
-    document.getElementById('fixedCosts').value = settings.fixedCosts;
-    document.getElementById('laborHourRate').value = settings.laborHourRate;
+    const setValueIfExists = (id, value) => {
+        const element = document.getElementById(id);
+        if (element) element.value = value;
+    };
 
-    document.getElementById('price_14k').value = settings.materialPrices['14k'];
-    document.getElementById('price_silver').value = settings.materialPrices['silver'];
-    document.getElementById('price_silver_cast').value = settings.materialPrices['silver_cast'];
+    setValueIfExists('vatRate', (settings.vatRate * 100).toFixed(1));
+    setValueIfExists('processingFee', (settings.processingFee * 100).toFixed(1));
+    setValueIfExists('packagingCost', settings.packagingCost);
+    setValueIfExists('fixedCosts', settings.fixedCosts);
+    setValueIfExists('laborHourRate', settings.laborHourRate);
 
-    document.getElementById('time_14k').value = settings.laborTime['14k'];
-    document.getElementById('time_silver').value = settings.laborTime['silver'];
-    document.getElementById('time_plating').value = settings.laborTime['plating'];
+    setValueIfExists('price_14k', settings.materialPrices['14k']);
+    setValueIfExists('price_silver', settings.materialPrices['silver']);
+    setValueIfExists('price_silver_cast', settings.materialPrices['silver_cast']);
 
-    document.getElementById('profit_14k').value = settings.profitMultiplier['14k'];
-    document.getElementById('profit_silver').value = settings.profitMultiplier['silver'];
-    document.getElementById('profit_plating').value = settings.profitMultiplier['plating'];
+    setValueIfExists('time_14k', settings.laborTime['14k']);
+    setValueIfExists('time_silver', settings.laborTime['silver']);
+    setValueIfExists('time_plating', settings.laborTime['plating']);
+
+    setValueIfExists('profit_14k', settings.profitMultiplier['14k']);
+    setValueIfExists('profit_silver', settings.profitMultiplier['silver']);
+    setValueIfExists('profit_plating', settings.profitMultiplier['plating']);
 }
 
 function saveSettings() {
@@ -119,6 +632,30 @@ function setupEventListeners() {
     if (editIsRecurring) {
         editIsRecurring.addEventListener('change', toggleEditRecurringMonths);
     }
+
+    // Add listeners for pricing inputs to trigger calculations
+    const pricingInputs = ['material', 'weight', 'productType', 'productName'];
+    pricingInputs.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener('change', updatePricing);
+            element.addEventListener('input', updatePricing);
+        }
+    });
+
+    // Reset site price when starting new calculation
+    let __sitePriceDirty = false;
+    const productFormInputs = ['productType', 'productName', 'material', 'weight'];
+    productFormInputs.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener('focus', () => {
+                if (!__sitePriceDirty) {
+                    resetSitePriceToDefault();
+                }
+            });
+        }
+    });
 }
 
 function switchTab(tabName) {
@@ -127,6 +664,16 @@ function switchTab(tabName) {
 
     document.querySelector(`.nav-tab[onclick="switchTab('${tabName}')"]`).classList.add('active');
     document.getElementById(tabName).classList.add('active');
+    
+    // Load data when switching to specific tabs
+    if (tabName === 'pricing') {
+        loadProducts();
+    } else if (tabName === 'expenses') {
+        // Load expense data automatically when entering expenses page
+        if (window.App && App.Managers && App.Managers.expenseManager) {
+            App.Managers.expenseManager.loadExpenseData();
+        }
+    }
 }
 
 function toggleWorkHoursField() {
@@ -232,38 +779,523 @@ function addRecurringExpenseToFutureMonths(expense) {
 // Old salary calculation functions removed since the section was deleted from HTML
 
 // Pricing Functions
+// ---------- Pricing helpers bound to SettingsService categories ----------
+function getSettingsObject() {
+    try { if (window.App?.SettingsService?.get) return App.SettingsService.get(); } catch {}
+    try { return JSON.parse(localStorage.getItem('settings') || '{}'); } catch { return {}; }
+}
+
+function findCategory(settingsObj, name) {
+    const cats = Array.isArray(settingsObj?.categories) ? settingsObj.categories : [];
+    return cats.find(c => c?.name === name);
+}
+
+function findItemValueInCategory(cat, itemName) {
+    if (!cat) return undefined;
+    const fromItems = Array.isArray(cat.items) ? cat.items.find(i => i?.name === itemName) : undefined;
+    if (fromItems) return Number(fromItems.value);
+    // Search subcategories items
+    for (const sc of (cat.subcategories || [])) {
+        const it = Array.isArray(sc.items) ? sc.items.find(i => i?.name === itemName) : undefined;
+        if (it) return Number(it.value);
+    }
+    return undefined;
+}
+
+function getMaterialPricePerGram(materialLabel) {
+    const settingsObj = getSettingsObject();
+    console.log('getMaterialPricePerGram DEBUG:', { 
+        materialLabel, 
+        settingsObj: settingsObj,
+        materialPrices: settingsObj?.materialPrices,
+        globalSettings: window.settings?.materialPrices,
+        fullSettingsObj: settingsObj
+    });
+    
+    // Try to find the material price in the settings structure
+    let price = 0;
+    
+    // First try direct lookup
+    if (settingsObj?.materialPrices?.[materialLabel]) {
+        price = Number(settingsObj.materialPrices[materialLabel]);
+        console.log('Found in materialPrices:', price);
+    }
+    // Try in categories structure
+    else if (settingsObj?.categories) {
+        const materialCategory = settingsObj.categories.find(cat => 
+            cat.name === 'חומרים – עלויות ועבודה'
+        );
+        if (materialCategory) {
+            const priceSubcat = materialCategory.subcategories?.find(sub => 
+                sub.name === 'עלות חומרים לגרם'
+            );
+            if (priceSubcat) {
+                const materialItem = priceSubcat.items?.find(item => 
+                    item.name === materialLabel
+                );
+                if (materialItem) {
+                    price = Number(materialItem.value);
+                    console.log('Found in categories structure:', price);
+                }
+            }
+        }
+    }
+    
+    console.log('Final price:', price);
+    return price;
+}
+
+function getLaborTimeForMaterial(materialLabel) {
+    const settingsObj = getSettingsObject();
+    console.log('getLaborTimeForMaterial DEBUG:', { 
+        materialLabel, 
+        settingsObj: settingsObj,
+        laborTime: settingsObj?.laborTime,
+        globalSettings: window.settings?.laborTime
+    });
+    
+    // Try to find the labor time in the settings structure
+    let time = 0;
+    
+    // First try direct lookup
+    if (settingsObj?.laborTime?.[materialLabel]) {
+        time = Number(settingsObj.laborTime[materialLabel]);
+        console.log('Found in laborTime:', time);
+    }
+    // Try in categories structure
+    else if (settingsObj?.categories) {
+        const materialCategory = settingsObj.categories.find(cat => 
+            cat.name === 'חומרים – עלויות ועבודה'
+        );
+        if (materialCategory) {
+            // Debug: show all subcategories
+            console.log('Material category subcategories:', materialCategory.subcategories?.map(sub => ({
+                name: sub.name,
+                items: sub.items?.map(item => item.name)
+            })));
+            
+            const timeSubcat = materialCategory.subcategories?.find(sub => 
+                sub.name === 'זמן עבודה לחומר (שעות)' || 
+                sub.name === 'זמן עבודה' ||
+                sub.name.includes('זמן')
+            );
+            if (timeSubcat) {
+                console.log('Found time subcategory:', timeSubcat.name, timeSubcat.items);
+                const materialItem = timeSubcat.items?.find(item => 
+                    item.name === materialLabel
+                );
+                if (materialItem) {
+                    time = Number(materialItem.value);
+                    console.log('Found labor time in categories structure:', time);
+                }
+            }
+        }
+    }
+    
+    console.log('Final labor time:', time);
+    return time;
+}
+
+function getProfitMultiplier(materialLabel) {
+    const settingsObj = getSettingsObject();
+    console.log('getProfitMultiplier DEBUG:', { 
+        materialLabel, 
+        profitMultiplier: settingsObj?.profitMultiplier,
+        globalSettings: window.settings?.profitMultiplier
+    });
+    
+    // Try to find the profit multiplier in the settings structure
+    let multiplier = 1;
+    
+    // First try direct lookup
+    if (settingsObj?.profitMultiplier?.[materialLabel]) {
+        multiplier = Number(settingsObj.profitMultiplier[materialLabel]);
+        console.log('Found in profitMultiplier:', multiplier);
+    }
+    // Try in categories structure - look in "מכפילי רווח" category
+    else if (settingsObj?.categories) {
+        const profitCategory = settingsObj.categories.find(cat => 
+            cat.name === 'מכפילי רווח'
+        );
+        if (profitCategory) {
+            console.log('Found profit category:', profitCategory.name, profitCategory.items);
+            // Map material names to profit multiplier names
+            const materialToProfitMap = {
+                'כסף': 'מכפלת כסף',
+                'יציקה כסף': 'מכפלת יציקה כסף',
+                'זהב 14K': 'מכפלת זהב',
+                'ציפוי זהב': 'מכפלת ציפוי זהב'
+            };
+            
+            const profitItemName = materialToProfitMap[materialLabel];
+            if (profitItemName) {
+                const profitItem = profitCategory.items?.find(item => 
+                    item.name === profitItemName
+                );
+                if (profitItem) {
+                    multiplier = Number(profitItem.value);
+                    console.log('Found profit multiplier:', profitItemName, '=', multiplier);
+                }
+            }
+        }
+    }
+    
+    console.log('Final profit multiplier:', multiplier);
+    return multiplier;
+}
+
+function getCorePricingConstant(name) {
+    const settingsObj = getSettingsObject();
+    const coreCat = findCategory(settingsObj, 'קבועי תמחור תכשיטים');
+    const result = Number(findItemValueInCategory(coreCat, name) || 0);
+    
+    // Debug: show all available items in the core category
+    if (name === 'סה"כ אריזה' && result === 0) {
+        console.log('Available items in core category:', coreCat?.subcategories?.map(sub => ({
+            subcategory: sub.name,
+            items: sub.items?.map(item => item.name)
+        })));
+    }
+    
+    console.log('getCorePricingConstant:', { 
+        name, 
+        coreCat: coreCat?.name, 
+        result,
+        settingsCategories: settingsObj?.categories?.map(c => c.name)
+    });
+    return result;
+}
+
+function getPackagingTotal() {
+    const result = getCorePricingConstant('סה"כ אריזה');
+    console.log('getPackagingTotal result:', result);
+    
+    // If the stored value is 0, update it to the correct value and return it
+    if (result === 0) {
+        console.log('Packaging total is 0, updating to correct value: 17.88');
+        
+        // Update the settings with the correct value
+        const settingsObj = getSettingsObject();
+        if (settingsObj?.categories) {
+            const coreCat = settingsObj.categories.find(cat => cat.name === 'קבועי תמחור תכשיטים');
+            if (coreCat?.items) {
+                const packagingItem = coreCat.items.find(item => item.name === 'סה"כ אריזה');
+                if (packagingItem) {
+                    packagingItem.value = 17.88;
+                    // Save the updated settings
+                    if (window.App?.SettingsService?.save) {
+                        window.App.SettingsService.save(settingsObj);
+                    } else {
+                        localStorage.setItem('settings', JSON.stringify(settingsObj));
+                    }
+                    console.log('Updated packaging total in settings');
+                }
+            }
+        }
+        
+        return 17.88;
+    }
+    
+    return result;
+}
+
+function getDomesticShipping() {
+    return getCorePricingConstant('משלוח בארץ');
+}
+
+function getVatMultiplier() {
+    const settingsObj = getSettingsObject();
+    const feesCategory = findCategory(settingsObj, 'עמלות');
+    const result = Number(findItemValueInCategory(feesCategory, 'מע"מ') || 0);
+    return result && result > 1 ? result : (1 + Number(result || 0));
+}
+
+function getClearingFeeMultiplier() {
+    const settingsObj = getSettingsObject();
+    const feesCategory = findCategory(settingsObj, 'עמלות');
+    return Number(findItemValueInCategory(feesCategory, 'מקדם עמלת סליקה (5.7%)') || 1);
+}
+
+function getFixedExpensesFeeMultiplier() {
+    const settingsObj = getSettingsObject();
+    const feesCategory = findCategory(settingsObj, 'עמלות');
+    return Number(findItemValueInCategory(feesCategory, 'מקדם עמלת הוצאות קבועות') || 1.17);
+}
+
+function getLaborHourRate() {
+    const settingsObj = getSettingsObject();
+    const workCategory = findCategory(settingsObj, 'חומרים – עלויות ועבודה');
+    return Number(findItemValueInCategory(workCategory, 'מחיר עבודה לשעה') || 0);
+}
+
+function getPricingConstantsTotal() {
+    const settingsObj = getSettingsObject();
+    if (!settingsObj?.categories) return 0;
+    
+    let total = 0;
+    
+    // חישוב סכום מכל הקטגוריות חוץ מ"עמלות"
+    settingsObj.categories.forEach(category => {
+        if (category.name === 'עמלות') return; // דילוג על קטגוריית העמלות
+        
+        // חישוב סכום מהפריטים של הקטגוריה
+        if (Array.isArray(category.items)) {
+            category.items.forEach(item => {
+                const value = Number(item.value || 0);
+                if (!isNaN(value)) total += value;
+            });
+        }
+        
+        // חישוב סכום מתת-קטגוריות
+        if (Array.isArray(category.subcategories)) {
+            category.subcategories.forEach(subcategory => {
+                if (Array.isArray(subcategory.items)) {
+                    subcategory.items.forEach(item => {
+                        const value = Number(item.value || 0);
+                        if (!isNaN(value)) total += value;
+                    });
+                }
+            });
+        }
+    });
+    
+    console.log('getPricingConstantsTotal result:', total);
+    return total;
+}
+
+// פונקציה לחישוב מכפלת כל העמלות
+function getAllFeesMultiplier() {
+    const vatMultiplier = getVatMultiplier();
+    const clearingFeeMultiplier = getClearingFeeMultiplier();
+    const fixedExpensesFeeMultiplier = getFixedExpensesFeeMultiplier();
+    
+    const totalMultiplier = vatMultiplier * clearingFeeMultiplier * fixedExpensesFeeMultiplier;
+    console.log('All fees calculation:', {
+        vatMultiplier,
+        clearingFeeMultiplier,
+        fixedExpensesFeeMultiplier,
+        totalMultiplier
+    });
+    
+    return totalMultiplier;
+}
+
+// פונקציה לקבלת סכום קבועי תמחור תכשיטים בלבד
+function getJewelryPricingConstantsTotal() {
+    const settingsObj = getSettingsObject();
+    const jewelryCategory = findCategory(settingsObj, 'קבועי תמחור תכשיטים');
+    if (!jewelryCategory) return 0;
+    
+    let total = 0;
+    
+    // חישוב סכום מהפריטים של הקטגוריה
+    if (Array.isArray(jewelryCategory.items)) {
+        jewelryCategory.items.forEach(item => {
+            const value = Number(item.value || 0);
+            if (!isNaN(value)) total += value;
+        });
+    }
+    
+    // חישוב סכום מתת-קטגוריות
+    if (Array.isArray(jewelryCategory.subcategories)) {
+        jewelryCategory.subcategories.forEach(subcategory => {
+            if (Array.isArray(subcategory.items)) {
+                subcategory.items.forEach(item => {
+                    const value = Number(item.value || 0);
+                    if (!isNaN(value)) total += value;
+                });
+            }
+        });
+    }
+    
+    console.log('getJewelryPricingConstantsTotal result:', total);
+    return total;
+}
+
+// פונקציה לבדיקת השינויים החדשים
+function testNewPricingStructure() {
+    console.log('=== בדיקת המבנה החדש ===');
+    console.log('מע"מ:', getVatMultiplier());
+    console.log('מקדם עמלת סליקה:', getClearingFeeMultiplier());
+    console.log('מקדם עמלת הוצאות קבועות:', getFixedExpensesFeeMultiplier());
+    console.log('מכפלת כל העמלות:', getAllFeesMultiplier());
+    console.log('מחיר עבודה לשעה:', getLaborHourRate());
+    console.log('סכום קבועי תמחור תכשיטים:', getJewelryPricingConstantsTotal());
+    
+    // בדיקת הנתונים המחושבים החדשים
+    const settingsObj = getSettingsObject();
+    if (settingsObj?.categories) {
+        const fixedCat = settingsObj.categories.find(cat => cat.name === 'הוצאות קבועות');
+        if (fixedCat) {
+            const totalItem = fixedCat.items?.find(item => item.name === 'סה"כ הוצאות קבועות');
+            console.log('סה"כ הוצאות קבועות (מחושב):', totalItem?.value || 0);
+        }
+        
+        const pricingCat = settingsObj.categories.find(cat => cat.name === 'קבועי תמחור תכשיטים');
+        if (pricingCat) {
+            const packagingItem = pricingCat.items?.find(item => item.name === 'סה"כ אריזה');
+            console.log('סה"כ אריזה (מחושב):', packagingItem?.value || 0);
+        }
+    }
+    console.log('=== סיום בדיקה ===');
+}
+
+// הפעלת הבדיקה כשהעמוד נטען
+window.addEventListener('load', () => {
+    setTimeout(() => {
+        testNewPricingStructure();
+        // בדיקה נוספת של השיפורים החדשים
+        console.log('=== בדיקת שיפורי התמחור החדשים ===');
+        const jewelryTotal = getJewelryPricingConstantsTotal();
+        const allFees = getAllFeesMultiplier();
+        console.log('סכום קבועי תמחור תכשיטים:', jewelryTotal);
+        console.log('מכפלת כל העמלות:', allFees);
+        console.log('שיפורי התמחור הושלמו בהצלחה!');
+        console.log('שלבי התמחור החדשים:');
+        console.log('שלב ב\': הוצאות חומרים + תוספות + קבועי תמחור תכשיטים');
+        console.log('שלב ד\': הוצאות ועבודה × מכפלת כל העמלות');
+        console.log('=== סיום בדיקה נוספת ===');
+    }, 1000);
+});
+
+function readAdditionsSum() {
+    const container = document.getElementById('additionsList');
+    if (!container) return 0;
+    let sum = 0;
+    container.querySelectorAll('input.addition-price').forEach(inp => {
+        const val = Number(inp.value || 0);
+        if (!isNaN(val)) sum += val;
+    });
+    return sum;
+}
+
 function updatePricing() {
-    const material = document.getElementById('material').value;
-    const weight = parseFloat(document.getElementById('weight').value) || 0;
+    const material = document.getElementById('material')?.value || '';
+    const weight = parseFloat(document.getElementById('weight')?.value) || 0;
 
-    let materialCost = 0, laborCost = 0, totalCost = 0, recommendedPrice = 0;
+    // Debug logging
+    console.log('updatePricing called:', { material, weight });
+    
+    // Step A: הוצאות חומרים = סוג חומר × משקל
+    const pricePerGram = getMaterialPricePerGram(material);
+    const materialCost = pricePerGram * weight;
+    
+    console.log('Material calculation:', { pricePerGram, materialCost });
+    const additionsSum = readAdditionsSum();
+    const additionsSumEl = document.getElementById('additionsSum');
+    if (additionsSumEl) additionsSumEl.innerHTML = formatILS(additionsSum);
 
-    if (material.includes('14K')) {
-        materialCost = weight * settings.materialPrices['14k'];
-        laborCost = settings.laborTime['14k'] * settings.laborHourRate;
-        totalCost = materialCost + laborCost + settings.fixedCosts;
-        recommendedPrice = totalCost * settings.profitMultiplier['14k'];
-    } else if (material.includes('כסף')) {
-        materialCost = weight * settings.materialPrices['silver'];
-        laborCost = settings.laborTime['silver'] * settings.laborHourRate;
-        totalCost = materialCost + laborCost + settings.fixedCosts;
-        recommendedPrice = totalCost * settings.profitMultiplier['silver'];
-    } 
+    // Step B: הוצאות כללי = הוצאות חומרים + תוספות + קבועי תמחור תכשיטים
+    const jewelryPricingConstants = getJewelryPricingConstantsTotal();
+    console.log('General expenses calculation:', { 
+        materialCost, 
+        additionsSum, 
+        jewelryPricingConstants,
+        note: 'קבועי תמחור תכשיטים כוללים: אריזה, משלוח וכל הקבועים מהקטגוריה'
+    });
+    const generalExpenses = materialCost + additionsSum + jewelryPricingConstants;
 
-    document.getElementById('materialCost').innerHTML = formatILS(materialCost);
-    document.getElementById('laborCost').innerHTML = formatILS(laborCost);
-    document.getElementById('fixedCostDisplay').innerHTML = formatILS(settings.fixedCosts);
-    document.getElementById('totalCost').innerHTML = formatILS(totalCost);
-    document.getElementById('recommendedPrice').innerHTML = formatILS(recommendedPrice);
+    // Step C: הוצאות ועבודה = הוצאות כללי + (זמן עבודה × שעת עבודה) + (שעות נוספות × שעת עבודה)
+    const laborTime = getLaborTimeForMaterial(material);
+    const additionalHours = parseFloat(document.getElementById('additionalWorkHours')?.value || '0') || 0;
+    const totalLaborTime = laborTime + additionalHours;
+    const laborHourRate = getLaborHourRate();
+    const laborCost = totalLaborTime * laborHourRate;
+    console.log('Labor calculation:', { 
+        laborTime, 
+        additionalHours,
+        totalLaborTime,
+        laborHourRate, 
+        laborCost 
+    });
+    const workAndExpenses = generalExpenses + laborCost;
 
+    // Step D: הוצאות סופי = הוצאות ועבודה × מכפלת כל העמלות
+    const allFeesMultiplier = getAllFeesMultiplier();
+    const finalExpenses = workAndExpenses * allFeesMultiplier;
+    console.log('Final expenses calculation:', { 
+        workAndExpenses, 
+        allFeesMultiplier, 
+        finalExpenses 
+    });
+
+    // Step E: מחיר מחושב סופי = הוצאות סופי × מכפלת רווח
+    const profitMult = getProfitMultiplier(material);
+    const recommendedPrice = finalExpenses * profitMult;
+    console.log('Final price calculation:', { 
+        finalExpenses, 
+        profitMult, 
+        recommendedPrice 
+    });
+
+    // Write to DOM
+    const setText = (id, val) => { const el = document.getElementById(id); if (el) el.innerHTML = formatILS(val); };
+    setText('materialCost', materialCost);
+    setText('generalExpenses', generalExpenses);
+    setText('workAndExpenses', workAndExpenses);
+    setText('finalExpenses', finalExpenses);
+    setText('recommendedPrice', recommendedPrice);
+
+    syncSitePriceDefault(recommendedPrice);
+    // Update recommended profit display
+    updateProfitDisplays({ finalExpenses, recommendedPrice });
     calculateDiscount();
 }
 
 function calculateDiscount() {
-    const recommendedPrice = parseFloat(document.getElementById('recommendedPrice').textContent.replace('₪', ''));
-    const discount = parseFloat(document.getElementById('discountPercent').value) || 0;
-    const discountedPrice = recommendedPrice * (1 - discount / 100);
-    document.getElementById('discountedPrice').innerHTML = formatILS(discountedPrice);
+    const sitePrice = parseFloat(document.getElementById('sitePriceInput')?.value || '0') || 0;
+    const discount = parseFloat(document.getElementById('discountPercent')?.value || '0') || 0;
+    const discountedPrice = sitePrice * (1 - discount / 100);
+    
+    // Get final expenses - clean the text by removing all HTML tags and symbols
+    const finalExpensesText = document.getElementById('finalExpenses')?.innerHTML || '0';
+    const finalExpenses = parseFloat(finalExpensesText.replace(/<[^>]*>/g, '').replace(/[^\d.-]/g, '')) || 0;
+
+    const discountedPriceEl = document.getElementById('discountedPrice');
+    if (discountedPriceEl) discountedPriceEl.innerHTML = formatILS(discountedPrice);
+
+    // Profit vs site price (₪ and %)
+    const siteProfitMoney = sitePrice - finalExpenses;
+    const siteProfitPercent = finalExpenses > 0 ? (siteProfitMoney / finalExpenses) * 100 : 0;
+    const siteProfitMoneyEl = document.getElementById('siteProfitMoney');
+    const siteProfitPercentEl = document.getElementById('siteProfitPercent');
+    if (siteProfitMoneyEl) siteProfitMoneyEl.innerHTML = formatILS(siteProfitMoney);
+    if (siteProfitPercentEl) siteProfitPercentEl.textContent = `${siteProfitPercent.toFixed(2)}%`;
+
+    // Discounted site price profit (for middle section calculator if exists)
+    const discountedProfitEl = document.getElementById('discountedProfit');
+    if (discountedProfitEl) discountedProfitEl.innerHTML = formatILS(discountedPrice - finalExpenses);
+}
+
+function updateProfitDisplays({ finalExpenses, recommendedPrice }) {
+    const money = recommendedPrice - finalExpenses;
+    const percent = finalExpenses > 0 ? (money / finalExpenses) * 100 : 0;
+    const moneyEl = document.getElementById('recommendedProfitMoney');
+    const percentEl = document.getElementById('recommendedProfitPercent');
+    if (moneyEl) moneyEl.innerHTML = formatILS(money);
+    if (percentEl) percentEl.textContent = `${percent.toFixed(2)}%`;
+}
+
+// Dynamic additions UI
+function addAdditionRow() {
+    const list = document.getElementById('additionsList');
+    if (!list) return;
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.style.gap = '8px';
+    row.innerHTML = `
+      <input type="text" class="addition-name" placeholder="שם התוספת" />
+      <input type="number" class="addition-price" step="0.01" placeholder="מחיר" />
+      <button type="button" class="btn-small" aria-label="remove" title="הסר">🗑️</button>
+    `;
+    const [nameInp, priceInp, removeBtn] = row.querySelectorAll('input,button');
+    priceInp.addEventListener('input', updatePricing);
+    priceInp.addEventListener('change', updatePricing);
+    removeBtn.addEventListener('click', () => { row.remove(); updatePricing(); });
+    list.appendChild(row);
+    
+    // Trigger update immediately to show the new row
+    updatePricing();
 }
 
 function addToProducts() {
@@ -315,6 +1347,30 @@ function cycleOrderStatus(id) {
     return App.Managers.orderManager.cycleOrderStatus(id);
 }
 
+function showOrderDetails(id) {
+    return App.Managers.orderManager.showOrderDetails(id);
+}
+
+function toggleReceiptStatus(id) {
+    return App.Managers.orderManager.toggleReceiptStatus(id);
+}
+
+function showEditOrderModal(id) {
+    return App.Managers.orderManager.showEditOrderModal(id);
+}
+
+function saveEditedOrder(event) {
+    return App.Managers.orderManager.saveEditedOrder(event);
+}
+
+function toggleCompletedOrders() {
+    return App.Managers.orderManager.toggleCompletedOrders();
+}
+
+function restoreOrder(id) {
+    return App.Managers.orderManager.restoreOrder(id);
+}
+
 // Modal Functions
 function openModal(id) {
     document.getElementById(id).classList.add('active');
@@ -348,4 +1404,44 @@ function toggleRecurringOptions() {
 function toggleRecurringMonths() {
     const isRecurring = document.getElementById('isRecurring').checked;
     document.getElementById('recurringMonths').style.display = isRecurring ? 'block' : 'none';
+}
+
+// Toggle functions for collapsible sections
+function toggleCollectionsManager() {
+    const content = document.getElementById('collectionsManagerContent');
+    const icon = document.getElementById('collectionsToggleIcon');
+    
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+        icon.textContent = '▼';
+    } else {
+        content.style.display = 'none';
+        icon.textContent = '▶';
+    }
+}
+
+function togglePricingCalculator() {
+    const content = document.getElementById('pricingCalculatorContent');
+    const icon = document.getElementById('pricingToggleIcon');
+    
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+        icon.textContent = '▼';
+    } else {
+        content.style.display = 'none';
+        icon.textContent = '▶';
+    }
+}
+
+// Global functions for edit modal
+function updateEditPricing() {
+    if (window.App && App.Managers && App.Managers.productManager) {
+        App.Managers.productManager.updateEditPricing();
+    }
+}
+
+function addEditAdditionRow() {
+    if (window.App && App.Managers && App.Managers.productManager) {
+        App.Managers.productManager.addEditAdditionRow();
+    }
 }

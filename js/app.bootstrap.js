@@ -4,6 +4,9 @@
 document.addEventListener('DOMContentLoaded', () => {
   try {
     if (typeof initializeSettings === 'function') initializeSettings();
+    if (typeof renderCollectionsManager === 'function') renderCollectionsManager();
+    if (typeof renderCollectionsChecklist === 'function') renderCollectionsChecklist();
+    if (typeof updatePricing === 'function') updatePricing();
     if (typeof loadExpenseData === 'function') loadExpenseData();
     if (typeof loadProducts === 'function') loadProducts();
     if (typeof loadOrders === 'function') loadOrders();

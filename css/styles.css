@@ -546,3 +546,288 @@ tr:hover {
     display: flex;
     gap: 5px;
 }
+
+/* Order Products Selection Styles */
+.products-selection {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    background-color: #f9f9f9;
+}
+
+.products-input-container {
+    position: relative;
+    margin-bottom: 10px;
+}
+
+.products-input-container input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.product-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #ccc;
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.suggestion-item {
+    padding: 10px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.suggestion-item:hover {
+    background-color: #f0f0f0;
+}
+
+.suggestion-item:last-child {
+    border-bottom: none;
+}
+
+.suggestion-info {
+    flex: 1;
+}
+
+.suggestion-name {
+    font-weight: bold;
+    color: #333;
+}
+
+.suggestion-details {
+    font-size: 12px;
+    color: #666;
+    margin-top: 2px;
+}
+
+.suggestion-price {
+    font-weight: bold;
+    color: #667eea;
+}
+
+.selected-products-list {
+    margin-top: 15px;
+}
+
+.selected-product-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-bottom: 8px;
+}
+
+.selected-product-info {
+    flex: 1;
+}
+
+.selected-product-name {
+    font-weight: bold;
+    color: #333;
+}
+
+.selected-product-details {
+    font-size: 12px;
+    color: #666;
+    margin-top: 2px;
+}
+
+.selected-product-price {
+    font-weight: bold;
+    color: #667eea;
+    margin-right: 10px;
+}
+
+.remove-product-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.remove-product-btn:hover {
+    background: #c82333;
+}
+
+.amount-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.amount-note {
+    font-size: 12px;
+    color: #666;
+    font-style: italic;
+}
+
+.discount-section {
+    margin: 15px 0;
+}
+
+.discount-section label {
+    font-weight: bold;
+    color: #333;
+}
+
+/* Order table enhancements */
+.btn-info {
+    background-color: #17a2b8;
+    color: white;
+}
+
+.btn-info:hover {
+    background-color: #138496;
+}
+
+.btn-warning {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.btn-warning:hover {
+    background-color: #e0a800;
+}
+
+/* Enhanced status badges with cursor pointer */
+.status-badge, .receipt-badge {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.status-badge:hover, .receipt-badge:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* Row numbering column styling */
+#ordersTable th:first-child {
+    width: 40px;
+    text-align: center;
+    background-color: #f8f9fa;
+    font-weight: bold;
+}
+
+#ordersTable td:first-child {
+    width: 40px;
+    text-align: center;
+    background-color: #f8f9fa;
+    font-weight: bold;
+    color: #666;
+    font-size: 14px;
+}
+
+/* Status badge colors */
+.status-badge.status-new {
+    background-color: #dc3545;
+    color: white;
+}
+
+.status-badge.status-paid_preparing {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.status-badge.status-ready {
+    background-color: #17a2b8;
+    color: white;
+}
+
+.status-badge.status-shipped {
+    background-color: #28a745;
+    color: white;
+}
+
+/* Legacy status colors for backward compatibility */
+.status-badge.status-paid {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.status-badge.status-in_work {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.status-badge.status-processing {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.status-badge.status-delivered {
+    background-color: #28a745;
+    color: white;
+}
+
+/* Fix alignment for action buttons when discount is shown */
+#ordersTable td {
+    vertical-align: middle;
+}
+
+#ordersTable .action-buttons {
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+/* Quantity control styling */
+.selected-product-quantity {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin: 5px 0;
+}
+
+.quantity-btn {
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    width: 25px;
+    height: 25px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.quantity-btn:hover:not(:disabled) {
+    background: #0056b3;
+}
+
+.quantity-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+.quantity-display {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 3px;
+    padding: 3px 8px;
+    min-width: 30px;
+    text-align: center;
+    font-weight: bold;
+}

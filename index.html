@@ -145,8 +145,32 @@
 
             <!-- Pricing Section -->
             <div id="pricing" class="section">
+                <!-- Compact Collections Manager -->
+                <div class="card" style="margin-bottom:10px;">
+                    <div class="card-header" style="padding:6px 10px; font-size:14px; cursor:pointer;" onclick="toggleCollectionsManager()">
+                        <span id="collectionsToggleIcon">▶</span> ניהול קולקציות
+                    </div>
+                    <div id="collectionsManagerContent" class="card-body" style="padding:8px 10px; display:none;">
+                        <div class="form-row">
+                            <div>
+                                <label>שם קולקציה חדשה:</label>
+                                <input type="text" id="newCollectionName" placeholder="לדוגמה: קלאסית" style="height:28px;"/>
+                            </div>
+                            <div>
+                                <button type="button" class="btn-small" onclick="addCollection()" style="margin-top:16px;">➕ הוסף קולקציה</button>
+                            </div>
+                        </div>
+                        <div id="collectionsManagerList" style="margin-top:6px; font-size:13px;"></div>
+                        <small style="color:#666; display:block; margin-top:4px;">מחיקה/עריכה משפיעה מיידית על כל העמוד.</small>
+                    </div>
+                </div>
+
+                <!-- Top: New Product Pricing Calculator -->
                 <div class="card">
-                    <div class="card-header">מחשבון תמחור מוצרים</div>
+                    <div class="card-header" style="cursor:pointer;" onclick="togglePricingCalculator()">
+                        <span id="pricingToggleIcon">▶</span> חישוב תמחור מוצר חדש
+                    </div>
+                    <div id="pricingCalculatorContent" style="display:none;">
                     
                     <div class="form-row">
                         <div>
@@ -159,13 +183,17 @@
                             </select>
                         </div>
                         <div>
+                            <label>שם התכשיט:</label>
+                            <input type="text" id="productName" placeholder="לדוגמה: טבעת ליאן"/>
+                        </div>
+                        <div>
                             <label>חומר:</label>
                             <select id="material" onchange="updatePricing()">
-                                <option value="14K זהב">14K זהב</option>
                                 <option value="כסף">כסף</option>
-                                <option value="כסף יציקה">כסף יציקה</option>
-                                <option value="ציפוי- כסף">ציפוי כסף</option>
-                                <option value="ציפוי- יציקה">ציפוי יציקה</option>
+                                <option value="יציקה כסף">יציקה כסף</option>
+                                <option value="זהב 14K">זהב 14K</option>
+                                <option value="ציפוי זהב">ציפוי זהב</option>
+                                <option value="יציקה ציפוי זהב">יציקה ציפוי זהב</option>
                             </select>
                         </div>
                         <div>
@@ -173,56 +201,152 @@
                             <input type="number" id="weight" step="0.1" onchange="updatePricing()">
                         </div>
                     </div>
+                    <div class="form-row">
+                        <div style="min-width:260px; width:100%;">
+                            <label>קולקציות:</label>
+                            <div id="collectionsChecklist"></div>
+                        </div>
+                    </div>
 
-                    <div class="price-display">
+                    <div class="price-display" style="margin-top:8px;">
+                        <div class="price-item"><strong>שלב א' – הוצאות חומרים</strong></div>
                         <div class="price-item">
                             <span>עלות חומר:</span>
                             <span id="materialCost">₪0</span>
                         </div>
-                        <div class="price-item">
-                            <span>עלות עבודה:</span>
-                            <span id="laborCost">₪0</span>
+                        <div class="price-item" style="font-size:12px; color:#555;">
+                            <span id="materialFormula">(סוג החומר × משקל החומר)</span>
+                        </div>
+                        <div class="price-item"><strong>שלב ב' – הוצאות כללי</strong></div>
+                        <div class="card" style="margin:8px 0;">
+                            <div class="card-header">תוספות</div>
+                            <div class="card-body" id="additionsList"></div>
+                            <div style="padding:8px 12px;">
+                                <button type="button" class="btn-small" onclick="addAdditionRow()">➕ הוסף תוספת</button>
+                            </div>
                         </div>
                         <div class="price-item">
-                            <span>עלויות קבועות:</span>
-                            <span id="fixedCostDisplay">₪0</span>
+                            <span>סכום תוספות:</span>
+                            <span id="additionsSum">₪0</span>
                         </div>
                         <div class="price-item">
-                            <span>סה"כ עלות:</span>
-                            <span id="totalCost">₪0</span>
+                            <span>הוצאות כללי:</span>
+                            <span id="generalExpenses">₪0</span>
+                        </div>
+                        <div class="price-item" style="font-size:12px; color:#555;">
+                            <span id="generalFormula">(הוצאות חומרים + Σ תוספות + קבועי תמחור תכשיטים)</span>
+                        </div>
+                        <div class="price-item"><strong>שלב ג' – הוצאות ועבודה</strong></div>
+                        <div class="price-item">
+                            <span>הוצאות ועבודה:</span>
+                            <span id="workAndExpenses">₪0</span>
+                        </div>
+                        <div class="price-item" style="font-size:12px; color:#555;">
+                            <span id="workFormula">(הוצאות כללי + (זמן עבודה × שעת עבודה))</span>
                         </div>
                         <div class="price-item">
-                            <span>מחיר מומלץ:</span>
-                            <span id="recommendedPrice">₪0</span>
+                            <label for="additionalWorkHours">שעות עבודה נוספות:</label>
+                            <input type="number" id="additionalWorkHours" min="0" step="0.5" value="0" onchange="updatePricing()" style="width: 80px; margin-right: 10px;">
+                            <span style="font-size: 12px; color: #666;">שעות</span>
+                        </div>
+                        <div class="price-item"><strong>שלב ד' – הוצאות סופי</strong></div>
+                        <div class="price-item">
+                            <span>הוצאות סופי:</span>
+                            <span id="finalExpenses">₪0</span>
+                        </div>
+                        <div class="price-item" style="font-size:12px; color:#555;">
+                            <span id="finalFormula">(הוצאות ועבודה × מכפלת כל העמלות)</span>
+                        </div>
+                        <div class="price-item"><strong>שלב ה' – מחיר מחושב סופי</strong></div>
+                        <div class="price-item" style="background:#f0f8ff; padding:8px; border-radius:6px; border:2px solid #0066cc;">
+                            <span style="font-size:18px; font-weight:bold;">מחיר מומלץ:</span>
+                            <span id="recommendedPrice" style="font-size:20px; font-weight:bold; color:#0066cc;">₪0</span>
+                        </div>
+                        <div class="price-item" style="font-size:12px; color:#555;">
+                            <span id="priceFormula">(הוצאות סופי × מכפלת רווח)</span>
+                        </div>
+                        <div class="price-item">
+                            <span>רווח מומלץ:</span>
+                            <span><strong id="recommendedProfitMoney">₪0</strong> (<span id="recommendedProfitPercent">0%</span>)</span>
                         </div>
                     </div>
 
-                    <div class="discount-calculator">
-                        <h4>מחשבון הנחות</h4>
-                        <div class="discount-input">
-                            <label>הנחה (%):</label>
-                            <input type="number" id="discountPercent" min="0" max="100" onchange="calculateDiscount()">
-                            <span>מחיר אחרי הנחה: <strong id="discountedPrice">₪0</strong></span>
+                    <div class="form-row" style="margin-top:12px; align-items:center;">
+                        <div>
+                            <label>מחיר באתר:</label>
+                            <input type="number" id="sitePriceInput" step="0.01" placeholder="ברירת מחדל: מחיר מומלץ" onchange="calculateDiscount()">
+                            <small style="display:block;color:#666;">אם לא שינית – יישמר המחיר המומלץ</small>
+                        </div>
+                        <div class="price-item" style="margin-inline-start:16px;">
+                            <span>רווח באתר:</span>
+                            <span><strong id="siteProfitMoney">₪0</strong> (<span id="siteProfitPercent">0%</span>)</span>
+                        </div>
+                        <div>
+                            <button onclick="addToProducts()" style="margin-top:18px;">➕ שמור והוסף לרשימת המוצרים</button>
                         </div>
                     </div>
 
-                    <button onclick="addToProducts()">➕ הוסף למוצרים</button>
+                    <!-- Formulas now shown inline next to each step -->
+                    </div>
                 </div>
 
+                <!-- Middle: Discounts and Filters -->
                 <div class="card">
-                    <div class="card-header">
-                        רשימת מוצרים
-                        <button onclick="showAddProductModal()" style="float: left;">➕ הוסף מוצר</button>
+                    <div class="card-header">בדיקת מחירים והנחות + סינון</div>
+                    <div class="form-row">
+                        <div>
+                            <label>הנחה כללית (%):</label>
+                            <input type="number" id="listDiscountPercent" min="0" max="100" value="0" onchange="loadProducts()" />
+                        </div>
+                        <div>
+                            <label>סוג מוצר:</label>
+                            <select id="filterType" onchange="loadProducts()">
+                                <option value="">הכל</option>
+                                <option value="טבעת">טבעת</option>
+                                <option value="עגילים">עגילים</option>
+                                <option value="שרשרת">שרשרת</option>
+                                <option value="צמיד">צמיד</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>חומר:</label>
+                            <select id="filterMaterial" onchange="loadProducts()">
+                                <option value="">הכל</option>
+                                <option value="כסף">כסף</option>
+                                <option value="יציקה כסף">יציקה כסף</option>
+                                <option value="זהב 14K">זהב 14K</option>
+                                <option value="ציפוי זהב">ציפוי זהב</option>
+                                <option value="יציקה ציפוי זהב">יציקה ציפוי זהב</option>
+                                <option value="exclude_14k">הכל חוץ מזהב 14K</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>קולקציה:</label>
+                            <select id="filterCollection" onchange="loadProducts()">
+                                <option value="">הכל</option>
+                            </select>
+                        </div>
+                        <div style="min-width:220px;">
+                            <label>חיפוש שם ספציפי:</label>
+                            <input type="text" id="filterName" placeholder="שם התכשיט" oninput="loadProducts()" />
+                        </div>
                     </div>
+                </div>
+
+                <!-- Bottom: Products List -->
+                <div class="card">
+                    <div class="card-header">רשימת מוצרים</div>
                     <table id="productsTable">
                         <thead>
                             <tr>
                                 <th>סוג</th>
                                 <th>שם</th>
                                 <th>חומר</th>
-                                <th>עלות</th>
-                                <th>מחיר מחושב</th>
-                                <th>מחיר באתר</th>
+                                <th>קולקציה</th>
+                                <th>סה"כ הוצאות</th>
+                                <th>מחיר לפני הנחה</th>
+                                <th>מחיר אחרי הנחה</th>
+                                <th>רווח (₪)</th>
                                 <th>רווח (%)</th>
                                 <th>פעולות</th>
                             </tr>
@@ -254,6 +378,7 @@
                         </select>
                     </div>
                     <button onclick="showAddOrderModal()">➕ הזמנה חדשה</button>
+                    <button onclick="toggleCompletedOrders()" id="toggleCompletedBtn">📋 הצג הזמנות מושלמות</button>
                 </div>
 
                 <div class="card">
@@ -261,6 +386,7 @@
                     <table id="ordersTable">
                         <thead>
                             <tr>
+                                <th>#</th>
                                 <th>מספר הזמנה</th>
                                 <th>תאריך</th>
                                 <th>לקוח</th>
@@ -268,6 +394,26 @@
                                 <th>סכום</th>
                                 <th>קבלה</th>
                                 <th>סטטוס</th>
+                                <th>פעולות</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <!-- Completed Orders Section -->
+                <div id="completedOrdersSection" class="card" style="display: none; margin-top: 20px;">
+                    <div class="card-header">הזמנות מושלמות</div>
+                    <table id="completedOrdersTable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>מספר הזמנה</th>
+                                <th>תאריך</th>
+                                <th>לקוח</th>
+                                <th>מוצרים</th>
+                                <th>סכום</th>
+                                <th>תאריך השלמה</th>
                                 <th>פעולות</th>
                             </tr>
                         </thead>
@@ -448,7 +594,7 @@
                 <input type="hidden" id="editProductId">
                 <div class="form-group">
                     <label>סוג מוצר:</label>
-                    <select id="editProductType" required>
+                    <select id="editProductType" required onchange="updateEditPricing()">
                         <option value="">בחר סוג</option>
                         <option value="טבעת">טבעת</option>
                         <option value="עגילים">עגילים</option>
@@ -457,27 +603,36 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>שם דגם:</label>
+                    <label>שם התכשיט:</label>
                     <input type="text" id="editProductName" required>
                 </div>
                 <div class="form-group">
                     <label>חומר:</label>
-                    <select id="editProductMaterial" required>
+                    <select id="editProductMaterial" required onchange="updateEditPricing()">
                         <option value="">בחר חומר</option>
-                        <option value="14K זהב">14K זהב</option>
                         <option value="כסף">כסף</option>
-                        <option value="כסף יציקה">כסף יציקה</option>
-                        <option value="ציפוי- כסף">ציפוי כסף</option>
-                        <option value="ציפוי- יציקה">ציפוי יציקה</option>
+                        <option value="זהב 14K">זהב 14K</option>
+                        <option value="ציפוי זהב">ציפוי זהב</option>
+                        <option value="יציקה כסף">יציקה כסף</option>
+                        <option value="יציקה ציפוי זהב">יציקה ציפוי זהב</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>עלות ייצור:</label>
-                    <input type="number" id="editProductCost" min="0" step="0.01" required>
+                    <label>משקל (גרם):</label>
+                    <input type="number" id="editProductWeight" step="0.1" onchange="updateEditPricing()">
                 </div>
                 <div class="form-group">
-                    <label>מחיר מחושב:</label>
-                    <input type="number" id="editProductPrice" min="0" step="0.01" required>
+                    <label>קולקציות:</label>
+                    <div id="editCollectionsChecklist"></div>
+                </div>
+                <div class="form-group">
+                    <label>תוספות:</label>
+                    <div id="editAdditionsList"></div>
+                    <button type="button" class="btn-small" onclick="addEditAdditionRow()">➕ הוסף תוספת</button>
+                </div>
+                <div class="form-group">
+                    <label>מחיר מומלץ מחושב:</label>
+                    <div id="editRecommendedPrice" style="font-size:16px; font-weight:bold; color:#0066cc;">₪0</div>
                 </div>
                 <div class="form-group">
                     <label>מחיר באתר:</label>
@@ -499,27 +654,135 @@
                     <label>שם הלקוח:</label>
                     <input type="text" id="customerName" required>
                 </div>
+                
+                <div class="form-group">
+                    <label>תאריך הזמנה:</label>
+                    <input type="date" id="orderDate" required>
+                </div>
+                
                 <div class="form-group">
                     <label>מוצרים:</label>
-                    <textarea id="orderProducts" rows="3" required></textarea>
+                    <div class="products-selection">
+                        <div class="products-input-container">
+                            <input type="text" id="productSearchInput" placeholder="חפש מוצר מהרשימה או הקלד ידנית..." autocomplete="off">
+                            <div id="productSuggestions" class="product-suggestions" style="display: none;"></div>
+                        </div>
+                        <button type="button" id="addProductBtn" class="btn-small">➕ הוסף מוצר</button>
+                        <div id="selectedProductsList" class="selected-products-list"></div>
+                    </div>
                 </div>
+                
                 <div class="form-group">
-                    <label>סכום:</label>
-                    <input type="number" id="orderAmount" min="0" step="0.01" required>
+                    <label>סכום כולל:</label>
+                    <div class="amount-container">
+                        <input type="number" id="calculatedAmount" min="0" step="0.01" readonly style="background-color: #f5f5f5;">
+                        <span class="amount-note">מחושב אוטומטית מהמוצרים</span>
+                    </div>
                 </div>
+                
+                <div class="form-group discount-section" style="border: 1px solid #ddd; padding: 10px; border-radius: 4px; background-color: #f9f9f9;">
+                    <label>
+                        <input type="checkbox" id="hasDiscount">
+                        ניתנה הנחה
+                    </label>
+                    <div id="discountDetails" style="display: none; margin-top: 10px;">
+                        <div class="form-group">
+                            <label>מחיר סופי ששולם:</label>
+                            <input type="number" id="finalPaidAmount" min="0" step="0.01">
+                        </div>
+                        <div class="form-group">
+                            <label>סיבת ההנחה:</label>
+                            <textarea id="discountReason" rows="2" placeholder="למה ניתנה הנחה?"></textarea>
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="form-group">
                     <label>
                         <input type="checkbox" id="receiptSent">
                         קבלה נשלחה
                     </label>
                 </div>
+                
                 <div class="form-group">
                     <label>הערות:</label>
                     <textarea id="orderNotes" rows="2"></textarea>
                 </div>
+                
                 <div class="modal-footer">
                     <button type="button" onclick="closeModal('addOrderModal')" class="btn-secondary">ביטול</button>
                     <button type="submit">הוסף הזמנה</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="editOrderModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">עריכת הזמנה</div>
+            <form id="editOrderForm" onsubmit="return saveEditedOrder(event)">
+                <div class="form-group">
+                    <label>שם הלקוח:</label>
+                    <input type="text" id="editCustomerName" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>תאריך הזמנה:</label>
+                    <input type="date" id="editOrderDate" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>מוצרים:</label>
+                    <div class="products-selection">
+                        <div class="product-search-container">
+                            <input type="text" id="editProductSearchInput" placeholder="חפש מוצר קיים או הכנס שם מוצר חדש...">
+                            <div id="editProductSuggestions" class="product-suggestions" style="display: none;"></div>
+                            <button type="button" id="editAddProductBtn">➕ הוסף מוצר</button>
+                        </div>
+                        <div id="editSelectedProductsList" class="selected-products-list"></div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>סכום כולל:</label>
+                    <div class="amount-container">
+                        <input type="number" id="editCalculatedAmount" min="0" step="0.01" readonly style="background-color: #f5f5f5;">
+                        <span class="amount-note">מחושב אוטומטית מהמוצרים</span>
+                    </div>
+                </div>
+                
+                <div class="form-group discount-section" style="border: 1px solid #ddd; padding: 10px; border-radius: 4px; background-color: #f9f9f9;">
+                    <label>
+                        <input type="checkbox" id="editHasDiscount" onchange="orderManager.toggleEditDiscountSection(this.checked)">
+                        ניתנה הנחה
+                    </label>
+                    <div id="editDiscountDetails" style="display: none; margin-top: 10px;">
+                        <div class="form-group">
+                            <label>מחיר סופי ששולם:</label>
+                            <input type="number" id="editFinalPaidAmount" min="0" step="0.01">
+                        </div>
+                        <div class="form-group">
+                            <label>סיבת ההנחה:</label>
+                            <textarea id="editDiscountReason" rows="2" placeholder="למה ניתנה הנחה?"></textarea>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="editReceiptSent">
+                        קבלה נשלחה
+                    </label>
+                </div>
+                
+                <div class="form-group">
+                    <label>הערות:</label>
+                    <textarea id="editOrderNotes" rows="2"></textarea>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" onclick="closeModal('editOrderModal')" class="btn-secondary">ביטול</button>
+                    <button type="submit">שמור שינויים</button>
                 </div>
             </form>
         </div>
@@ -551,51 +814,54 @@
       (function(){
         // Defaults seeded per approved hierarchy (Hebrew)
         const DEFAULT_CATEGORIES = [
-          { name: 'קבועי תמחור תכשיטים', collapsed: false, subcategories: [
-              { name: 'פירוט אריזה', collapsed: false, items: [
-                { name: 'קופסאת תכשיט', value: 2.5, quantity: 100, manufacturer: 'גיל אריזות' },
-                { name: 'קופסאת אריזה', value: 7.17, quantity: 50, manufacturer: 'Geotobox' },
-                { name: 'מדבקה קטנה', value: 1.26, quantity: 100, manufacturer: 'Pix' },
-                { name: 'מדבקה גדולה', value: 1.26, quantity: 100, manufacturer: 'Pix' },
-                { name: 'ברושור', value: 2.86, quantity: 100, manufacturer: 'Pix' },
-                { name: 'תעודת אחריות', value: 1.17, quantity: 100, manufacturer: 'דפוס סופרגרף' },
-                { name: 'נייר משי', value: 0.41, quantity: 200, manufacturer: 'מור פז' },
-                { name: 'שקיות ניילון/נייר', value: 1.25, quantity: 200, manufacturer: 'PEC פולי אריזות/מור' }
+          { name: 'עמלות', collapsed: true, subcategories: [], items: [
+              { name: 'מקדם עמלת הוצאות קבועות', value: 1.17 },
+              { name: 'מקדם עמלת סליקה (5.7%)', value: 1.057 },
+              { name: 'מע"מ', value: 1.18 }
+            ] },
+          { name: 'קבועי תמחור תכשיטים', collapsed: true, subcategories: [
+            { name: 'פירוט אריזה', collapsed: true, items: [
+              { name: 'קופסאת תכשיט', value: 2.5, quantity: 100, manufacturer: 'גיל אריזות' },
+              { name: 'קופסאת אריזה', value: 7.17, quantity: 50, manufacturer: 'Geotobox' },
+              { name: 'שקית נייר', value: 1.5, quantity: 100, manufacturer: 'ספק מקומי' },
+              { name: 'מדבקה', value: 0.38, quantity: 200, manufacturer: 'ספק מקומי' },
+              { name: 'נייר משי', value: 6.33, quantity: 50, manufacturer: 'ספק מקומי' }
               ] }
             ], items: [
-              { name: 'מע"מ', value: 1.18 },
-              { name: 'מחיר עבודה לשעה', value: 80 },
-              { name: 'מע"מ בארץ (%)', value: 17 },
-              { name: 'מקדם עמלת סליקה (5.7%)', value: 1.057 },
-              { name: 'עמלת מכירה בפלטפורמה', value: 0.17 },
-              { name: 'סה"כ אריזה', value: 0 }
+              { name: 'סה"כ אריזה', value: 17.88 },
+              { name: 'משלוח בארץ', value: 17 }
             ] },
-          { name: 'מכפילי רווח', collapsed: false, subcategories: [], items: [
+          { name: 'מכפילי רווח', collapsed: true, subcategories: [], items: [
             { name: 'מכפלת זהב', value: 1.3 },
-            { name: 'מכפלת כסף', value: 1.3 },
-            { name: 'מכפלת ציפוי', value: 1.3 }
+            { name: 'מכפלת כסף', value: 1.5 },
+            { name: 'מכפלת ציפוי זהב', value: 1.5 },
+            { name: 'מכפלת יציקה כסף', value: 1.5 },
+            { name: 'מכפלת יציקה ציפוי זהב', value: 1.5 }
           ] },
-          { name: 'יחסי המרה', collapsed: false, subcategories: [], items: [
-            { name: 'זהב', value: 13.4 },
+          { name: 'יחסי המרה', collapsed: true, subcategories: [], items: [
+            { name: 'זהב 14K', value: 13.4 },
             { name: 'כסף', value: 10.4 }
           ] },
-          { name: 'חומרים – עלויות ועבודה', collapsed: false, subcategories: [
-            { name: 'עלות חומרים לגרם', collapsed: false, items: [
-              { name: 'כסף', value: 4.68 },
-              { name: 'כסף יציקה', value: 8 },
-              { name: '14K זהב', value: 230 },
-              { name: 'ציפוי – כסף', value: 4.68 },
-              { name: 'ציפוי – יציקה', value: 8 }
+          { name: 'חומרים – עלויות ועבודה', collapsed: true, subcategories: [
+            { name: 'עלות חומרים לגרם', collapsed: true, items: [
+              { name: 'כסף', value: 6 },
+              { name: 'יציקה כסף', value: 9 },
+              { name: 'זהב 14K', value: 270 },
+              { name: 'ציפוי זהב', value: 10 },
+              { name: 'יציקה ציפוי זהב', value: 10 }
             ] },
-            { name: 'זמן עבודה (שעות)', collapsed: false, items: [
+            { name: 'זמן עבודה (שעות)', collapsed: true, items: [
               { name: 'כסף', value: 1 },
-              { name: 'כסף יציקה', value: 1 },
-              { name: '14K זהב', value: 1.875 },
-              { name: 'ציפוי – כסף', value: 1 },
-              { name: 'ציפוי – יציקה', value: 1 }
+              { name: 'יציקה כסף', value: 1 },
+              { name: 'זהב 14K', value: 1.875 },
+              { name: 'ציפוי זהב', value: 1 },
+              { name: 'יציקה ציפוי זהב', value: 1 }
             ] }
+          ], items: [
+            { name: 'מחיר עבודה לשעה', value: 80 }
           ] },
-          { name: 'הוצאות קבועות', collapsed: false, subcategories: [], items: [
+          { name: 'הוצאות קבועות', collapsed: true, subcategories: [], items: [
+            { name: 'סה"כ הוצאות קבועות', value: 0 },
             { name: 'שיווק', value: 500 },
             { name: 'רו"ח', value: 354 },
             { name: 'אתר – שופיפי', value: 160 },
@@ -682,6 +948,19 @@
           return false;
         }
 
+        // Ensure the computed fixed expenses total item exists; return true if added/changed structure.
+        function seedFixedExpensesDefaults(categories){
+          const fixedCat = findCategory(categories, 'הוצאות קבועות');
+          if (!fixedCat) return false;
+          fixedCat.items = Array.isArray(fixedCat.items) ? fixedCat.items : [];
+          const exists = fixedCat.items.find(it => (it.name||'') === 'סה"כ הוצאות קבועות');
+          if (!exists) {
+            fixedCat.items.unshift({ name: 'סה"כ הוצאות קבועות', value: 0 });
+            return true;
+          }
+          return false;
+        }
+
         // Compute the packaging total from 'פירוט אריזה' and sync into category-level 'סה"כ אריזה'
         function syncPackagingTotal(categories){
           const pricingCat = findCategory(categories, 'קבועי תמחור תכשיטים');
@@ -689,7 +968,24 @@
           const packSub = findSubcategory(pricingCat, 'פירוט אריזה');
           const total = packSub ? subSum(packSub) : 0;
           const totalItem = (pricingCat.items || []).find(it => (it.name||'') === 'סה"כ אריזה');
-          if (totalItem) totalItem.value = total;
+          if (totalItem) totalItem.value = parseFloat(total.toFixed(2));
+        }
+
+        // Compute the fixed expenses total and sync into category-level 'סה"כ הוצאות קבועות'
+        function syncFixedExpensesTotal(categories){
+          const fixedCat = findCategory(categories, 'הוצאות קבועות');
+          if (!fixedCat) return;
+          
+          // Calculate sum of all items except the total item itself
+          let total = 0;
+          (fixedCat.items || []).forEach(item => {
+            if (item.name !== 'סה"כ הוצאות קבועות') {
+              total += Number(item.value || 0);
+            }
+          });
+          
+          const totalItem = (fixedCat.items || []).find(it => (it.name||'') === 'סה"כ הוצאות קבועות');
+          if (totalItem) totalItem.value = parseFloat(total.toFixed(2));
         }
 
         // Draft/dirty management for Settings (categories)
@@ -744,8 +1040,10 @@
           const categories = getCategoriesForEdit();
           let migrated = migratePricingCategoryStructure(categories);
           if (seedPackagingDefaults(categories)) { migrated = true; }
+          if (seedFixedExpensesDefaults(categories)) { migrated = true; }
           // Do not auto-save; user will decide to commit. Keep draft updated.
           syncPackagingTotal(categories);
+          syncFixedExpensesTotal(categories);
           container.innerHTML = '';
 
           categories.forEach((cat, idx) => {
@@ -808,7 +1106,64 @@
             body.className = 'card-body';
             body.style.display = cat.collapsed ? 'none' : 'block';
 
-            // Subcategories list
+            // First render category-level items (so they appear at the top)
+            (function(){
+              const itemsWrap = document.createElement('div');
+              (cat.items || []).forEach((it, iidx) => {
+                const r = document.createElement('div'); r.className='row';
+                const nameInput = document.createElement('input'); nameInput.type='text'; nameInput.value=it.name || ''; nameInput.placeholder='שם נתון';
+                const isComputedPack = (cat.name === 'קבועי תמחור תכשיטים' && (it.name||'') === 'סה"כ אריזה');
+                const isComputedFixed = (cat.name === 'הוצאות קבועות' && (it.name||'') === 'סה"כ הוצאות קבועות');
+                const isComputed = isComputedPack || isComputedFixed;
+                
+                if (!isComputed) {
+                  nameInput.addEventListener('change', () => { it.name = nameInput.value; markDirty(); renderCategories(); });
+                } else {
+                  nameInput.readOnly = true; 
+                  nameInput.title = isComputedPack ? 'נתון מחושב מתוך "פירוט אריזה"' : 'נתון מחושב מסכום הפריטים בקטגוריה';
+                }
+                const valInput = document.createElement('input'); valInput.type='number'; valInput.step='0.01'; valInput.value = Number(it.value || 0);
+                if (!isComputed) {
+                  valInput.addEventListener('change', () => { it.value = Number(valInput.value || 0); markDirty(); renderCategories(); });
+                } else {
+                  valInput.readOnly = true; valInput.title = 'ערך זה מחושב אוטומטית';
+                }
+                let note;
+                if (isComputed) {
+                  note = document.createElement('small');
+                  note.style.opacity = '0.75';
+                  note.textContent = isComputedPack ? 'סכום מחושב מתוך "פירוט אריזה" — לא ניתן לשנות ידנית' : 'סכום מחושב מכל הפריטים בקטגוריה — לא ניתן לשנות ידנית';
+                }
+                const delBtn = document.createElement('button'); delBtn.className='icon-btn'; delBtn.textContent='🗑️'; delBtn.title='הסר נתון';
+                if (!isComputed) {
+                  delBtn.addEventListener('click', () => { cat.items.splice(iidx,1); markDirty(); renderCategories(); });
+                } else {
+                  // hide delete for computed total
+                }
+                r.appendChild(nameInput); r.appendChild(valInput); if (note) r.appendChild(note); if (!isComputed) r.appendChild(delBtn);
+                itemsWrap.appendChild(r);
+              });
+
+              const quickRow = document.createElement('div'); quickRow.className='row';
+              const qName = document.createElement('input'); qName.type='text'; qName.placeholder='שם נתון';
+              const qVal = document.createElement('input'); qVal.type='number'; qVal.step='0.01'; qVal.placeholder='ערך';
+              const qAdd = document.createElement('button'); qAdd.className='icon-btn'; qAdd.textContent='➕ הוסף';
+              qAdd.addEventListener('click', () => {
+                const n = (qName.value||'').trim(); const v = Number(qVal.value||0);
+                if (!n) return; cat.items = cat.items || [];
+                if (cat.name === 'קבועי תמחור תכשיטים' && n === 'סה"כ אריזה') { alert('"סה"כ אריזה" הוא נתון מחושב ואינו ניתן להוספה ידנית.'); return; }
+                if (cat.name === 'הוצאות קבועות' && n === 'סה"כ הוצאות קבועות') { alert('"סה"כ הוצאות קבועות" הוא נתון מחושב ואינו ניתן להוספה ידנית.'); return; }
+                cat.items.push({ name:n, value:v });
+                qName.value=''; qVal.value='';
+                markDirty(); renderCategories();
+              });
+              quickRow.appendChild(qName); quickRow.appendChild(qVal); quickRow.appendChild(qAdd);
+
+              body.appendChild(itemsWrap);
+              body.appendChild(quickRow);
+            })();
+
+            // Then render subcategories list
             (cat.subcategories || []).forEach((sub, sidx) => {
               const subcard = document.createElement('div'); subcard.className='subcard';
 
@@ -817,8 +1172,7 @@
               const subHeader = document.createElement('div'); subHeader.className='sub-header';
               const sLeft = document.createElement('div'); sLeft.style.display='flex'; sLeft.style.alignItems='center'; sLeft.style.gap='8px';
               const subTitle = document.createElement('button'); subTitle.className='icon-btn'; subTitle.type='button'; subTitle.textContent=sub.name || ('תת קטגוריה ' + (sidx+1));
-              const subTotal = document.createElement('span'); subTotal.className='sum-badge'; subTotal.textContent='₪' + subSum(sub).toFixed(2);
-              sLeft.appendChild(subTitle); sLeft.appendChild(subTotal);
+              sLeft.appendChild(subTitle);
 
               const sActions = document.createElement('div');
               const addItemBtn = document.createElement('button'); addItemBtn.className='icon-btn'; addItemBtn.textContent='➕ נתון'; addItemBtn.title='הוסף נתון';
@@ -844,12 +1198,36 @@
               // Column headers for 'פירוט אריזה'
               if (sub.name === 'פירוט אריזה'){
                 const headerRow = document.createElement('div'); headerRow.className='row';
-                const hName = document.createElement('strong'); hName.textContent = 'שם';
-                const hVal = document.createElement('strong'); hVal.textContent = 'ערך';
-                const hQty = document.createElement('strong'); hQty.textContent = 'כמות';
-                const hMfr = document.createElement('strong'); hMfr.textContent = 'יצרן';
+                headerRow.style.fontWeight = 'bold';
+                headerRow.style.backgroundColor = '#f8f9fa';
+                headerRow.style.padding = '8px 0';
+                headerRow.style.borderBottom = '1px solid #ddd';
+                
+                const hName = document.createElement('div'); 
+                hName.textContent = 'שם';
+                hName.style.flex = '0 1 220px';
+                hName.style.minWidth = '150px';
+                
+                const hVal = document.createElement('div'); 
+                hVal.textContent = 'ערך';
+                hVal.style.flex = '0 0 100px';
+                hVal.style.minWidth = '90px';
+                
+                const hQty = document.createElement('div'); 
+                hQty.textContent = 'כמות';
+                hQty.style.flex = '0 0 100px';
+                hQty.style.minWidth = '90px';
+                
+                const hMfr = document.createElement('div'); 
+                hMfr.textContent = 'יצרן';
+                hMfr.style.flex = '0 1 220px';
+                hMfr.style.minWidth = '150px';
+                
+                headerRow.appendChild(hName); 
+                headerRow.appendChild(hVal); 
+                headerRow.appendChild(hQty); 
+                headerRow.appendChild(hMfr);
                 itemsWrap.appendChild(headerRow);
-                headerRow.appendChild(hName); headerRow.appendChild(hVal); headerRow.appendChild(hQty); headerRow.appendChild(hMfr);
               }
               (sub.items || []).forEach((it, iidx) => {
                 const r = document.createElement('div'); r.className='row';
@@ -916,67 +1294,9 @@
               body.appendChild(subcard);
             });
 
-            // After subcategories (so 'פירוט אריזה' appears above), render category-level items (no header, flat rows)
-            (function(){
-              const itemsWrap = document.createElement('div');
-              (cat.items || []).forEach((it, iidx) => {
-                const r = document.createElement('div'); r.className='row';
-                const nameInput = document.createElement('input'); nameInput.type='text'; nameInput.value=it.name || ''; nameInput.placeholder='שם נתון';
-                const isComputedPack = (cat.name === 'קבועי תמחור תכשיטים' && (it.name||'') === 'סה"כ אריזה');
-                if (!isComputedPack) {
-                  nameInput.addEventListener('change', () => { it.name = nameInput.value; markDirty(); renderCategories(); });
-                } else {
-                  nameInput.readOnly = true; nameInput.title = 'נתון מחושב מתוך "פירוט אריזה"';
-                }
-                const valInput = document.createElement('input'); valInput.type='number'; valInput.step='0.01'; valInput.value = Number(it.value || 0);
-                if (!isComputedPack) {
-                  valInput.addEventListener('change', () => { it.value = Number(valInput.value || 0); markDirty(); renderCategories(); });
-                } else {
-                  valInput.readOnly = true; valInput.title = 'ערך זה מחושב אוטומטית';
-                }
-                let note;
-                if (isComputedPack) {
-                  note = document.createElement('small');
-                  note.style.opacity = '0.75';
-                  note.textContent = 'סכום מחושב מתוך "פירוט אריזה" — לא ניתן לשנות ידנית';
-                }
-                const delBtn = document.createElement('button'); delBtn.className='icon-btn'; delBtn.textContent='🗑️'; delBtn.title='הסר נתון';
-                if (!isComputedPack) {
-                  delBtn.addEventListener('click', () => { cat.items.splice(iidx,1); markDirty(); renderCategories(); });
-                } else {
-                  // hide delete for computed total
-                }
-                r.appendChild(nameInput); r.appendChild(valInput); if (note) r.appendChild(note); if (!isComputedPack) r.appendChild(delBtn);
-                itemsWrap.appendChild(r);
-              });
-
-              const quickRow = document.createElement('div'); quickRow.className='row';
-              const qName = document.createElement('input'); qName.type='text'; qName.placeholder='שם נתון';
-              const qVal = document.createElement('input'); qVal.type='number'; qVal.step='0.01'; qVal.placeholder='ערך';
-              const qAdd = document.createElement('button'); qAdd.className='icon-btn'; qAdd.textContent='➕ הוסף';
-              qAdd.addEventListener('click', () => {
-                const n = (qName.value||'').trim(); const v = Number(qVal.value||0);
-                if (!n) return; cat.items = cat.items || [];
-                if (cat.name === 'קבועי תמחור תכשיטים' && n === 'סה"כ אריזה') { alert('"סה"כ אריזה" הוא נתון מחושב ואינו ניתן להוספה ידנית.'); return; }
-                cat.items.push({ name:n, value:v });
-                qName.value=''; qVal.value='';
-                markDirty(); renderCategories();
-              });
-              quickRow.appendChild(qName); quickRow.appendChild(qVal); quickRow.appendChild(qAdd);
-
-              body.appendChild(itemsWrap);
-              body.appendChild(quickRow);
-            })();
-
-            // Category footer total
-            const footer = document.createElement('div'); footer.style.display='flex'; footer.style.justifyContent='space-between'; footer.style.alignItems='center'; footer.style.marginTop='6px';
-            const hint = document.createElement('small'); hint.style.opacity='0.7'; hint.textContent='';
-            const total = document.createElement('span'); total.className='sum-badge'; total.textContent='סה\'\'כ: ₪' + catSum(cat).toFixed(2);
-            footer.appendChild(hint); footer.appendChild(total);
 
             wrapper.appendChild(header);
             wrapper.appendChild(body);
-            body.appendChild(footer);
             container.appendChild(wrapper);
           });
         }

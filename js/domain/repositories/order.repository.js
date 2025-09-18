@@ -32,7 +32,7 @@ window.App.Repositories = window.App.Repositories || {};
 
   function getNextOrderNumber() {
     const n = parseInt(localStorage.getItem(NEXT_KEY), 10);
-    return Number.isFinite(n) && n > 0 ? n : 1;
+    return Number.isFinite(n) && n >= 1000 ? n : 1000;
   }
 
   function setNextOrderNumber(n) {
