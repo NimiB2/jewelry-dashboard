@@ -1,0 +1,885 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "description": "Complete product data for JewelryDashboard bulk import",
+    "totalProducts": 103,
+    "lastUpdated": "2025-09-23",
+    "categories": ["טבעת", "עגילים", "צמיד", "שרשרת"],
+    "materials": ["14K זהב", "כסף", "כסף יציקה", "ציפוי- כסף", "ציפוי- יציקה"]
+  },
+  "materialMapping": {
+    "14K זהב": "זהב 14K",
+    "כסף": "כסף",
+    "כסף יציקה": "יציקה כסף",
+    "ציפוי- כסף": "ציפוי זהב",
+    "ציפוי- יציקה": "ציפוי זהב"
+  },
+  "products": [
+    [
+      {
+        "productType": "טבעת",
+        "modelName": "סופי",
+        "material": "14K זהב",
+        "materialWeightGr": 2.9,
+        "additions": [],
+        "sitePrice": 1700.0
+      },
+      {
+        "productType": "טבעת",
+        "modelName": "ענבר",
+        "material": "14K זהב",
+        "materialWeightGr": 1.7,
+        "additions": [],
+        "sitePrice": 1000.0
+      },
+      {
+        "productType": "טבעת",
+        "modelName": "טביעת אצבע",
+        "material": "כסף יציקה",
+        "materialWeightGr": 7.9,
+        "additions": [],
+        "sitePrice": 399.0
+      },
+      {
+        "productType": "טבעת",
+        "modelName": "גל דקה",
+        "material": "14K זהב",
+        "materialWeightGr": 2.1,
+        "additions": [],
+        "sitePrice": 1300.0
+      },
+      {
+        "productType": "טבעת",
+        "modelName": "גל עבה",
+        "material": "14K זהב",
+        "materialWeightGr": 4.0,
+        "additions": [],
+        "sitePrice": 2000.0
+      },
+      {
+        "productType": "טבעת",
+        "modelName": "טבעת צמה",
+        "material": "14K זהב",
+        "materialWeightGr": 2.0,
+        "additions": [],
+        "sitePrice": 1300.0
+      },
+      {
+        "productType": "טבעת",
+        "modelName": "קרואסון",
+        "material": "14K זהב",
+        "materialWeightGr": 2.0,
+        "additions": [],
+        "sitePrice": 1350.0
+      },
+      {
+        "productType": "טבעת",
+        "modelName": "עיגול ואבן קטן (מיה)",
+        "material": "14K זהב",
+        "materialWeightGr": 2.0,
+        "additions": [],
+        "sitePrice": 1800.0
+      },
+      {
+        "productType": "טבעת",
+        "modelName": "מיקה (עם אבן)",
+        "material": "14K זהב",
+        "materialWeightGr": 3.0,
+        "additions": [],
+        "sitePrice": 2000.0
+      },
+      {
+        "productType": "טבעת",
+        "modelName": "גוני ויהלומים",
+        "material": "14K זהב",
+        "materialWeightGr": 2.0,
+        "additions": [],
+        "sitePrice": 1900.0
+      },
+      {
+        "productType": "טבעת",
+        "modelName": "דניאל",
+        "material": "14K זהב",
+        "materialWeightGr": 4.0,
+        "additions": [],
+        "sitePrice": 2200.0
+      },
+      {
+        "productType": "טבעת",
+        "modelName": "נישואין 5 ממ",
+        "material": "14K זהב",
+        "materialWeightGr": 4.0,
+        "additions": [],
+        "sitePrice": 2200.0
+      },
+      {
+        "productType": "טבעת",
+        "modelName": "סול (שחר ויובל)",
+        "material": "14K זהב",
+        "materialWeightGr": 4.0,
+        "additions": [],
+        "sitePrice": 2200.0
+      },
+      {
+        "productType": "טבעת",
+        "modelName": "גל 3 יהלום פלייר",
+        "material": "14K זהב",
+        "materialWeightGr": 2.1,
+        "additions": [],
+        "sitePrice": 1800.0
+      },
+      {
+        "productType": "עגילים",
+        "modelName": "טל",
+        "material": "כסף",
+        "materialWeightGr": 3.82,
+        "additions": [],
+        "sitePrice": 299.0
+      },
+      {
+        "productType": "עגילים",
+        "modelName": "טל",
+        "material": "ציפוי- כסף",
+        "materialWeightGr": 3.82,
+        "additions": [],
+        "sitePrice": 379.0
+      },
+      {
+        "productType": "עגילים",
+        "modelName": "לונה",
+        "material": "כסף",
+        "materialWeightGr": 2.0,
+        "additions": [],
+        "sitePrice": 279.0
+      },
+      {
+        "productType": "עגילים",
+        "modelName": "לונה",
+        "material": "ציפוי- כסף",
+        "materialWeightGr": 2.0,
+        "additions": [],
+        "sitePrice": 299.0
+      },
+      {
+        "productType": "עגילים",
+        "modelName": "לונה",
+        "material": "14K זהב",
+        "materialWeightGr": 3.06,
+        "additions": [],
+        "sitePrice": 2000.0
+      },
+      {
+        "productType": "עגילים",
+        "modelName": "בליס",
+        "material": "כסף יציקה",
+        "materialWeightGr": 2.0,
+        "additions": [],
+        "sitePrice": 299.0
+      },
+      {
+        "productType": "עגילים",
+        "modelName": "בליס",
+        "material": "ציפוי- יציקה",
+        "materialWeightGr": 2.0,
+        "additions": [],
+        "sitePrice": 349.0
+      },
+      {
+        "productType": "עגילים",
+        "modelName": "פרח ופנינה (איריס)",
+        "material": "כסף יציקה",
+        "materialWeightGr": 1.0,
+        "additions": [],
+        "sitePrice": 329.0
+      },
+      {
+        "productType": "עגילים",
+        "modelName": "פרח ופנינה (איריס)",
+        "material": "ציפוי- יציקה",
+        "materialWeightGr": 1.0,
+        "additions": [],
+        "sitePrice": 369.0
+      },
+      {
+        "productType": "עגילים",
+        "modelName": "קיפול גדול (סרינה)",
+        "material": "כסף יציקה",
+        "materialWeightGr": 7.0,
+        "additions": [],
+        "sitePrice": 389.0
+      },
+      {
+        "productType": "עגילים",
+        "modelName": "קיפול גדול (סרינה)",
+        "material": "ציפוי- יציקה",
+        "materialWeightGr": 7.0,
+        "additions": [],
+        "sitePrice": 469.0
+      },
+      {
+        "productType": "עגילים",
+        "modelName": "רק אמורפי (דפני)",
+        "material": "כסף יציקה",
+        "materialWeightGr": 2.0,
+        "additions": [],
+        "sitePrice": 299.0
+      },
+      {
+        "productType": "עגילים",
+        "modelName": "רק אמורפי (דפני)",
+        "material": "ציפוי- יציקה",
+        "materialWeightGr": 2.0,
+        "additions": [],
+        "sitePrice": 339.0
+      },
+      {
+        "productType": "עגילים",
+        "modelName": "פרח יסמין",
+        "material": "כסף יציקה",
+        "materialWeightGr": 2.23,
+        "additions": [],
+        "sitePrice": 319.0
+      },
+      {
+        "productType": "עגילים",
+        "modelName": "פרח יסמין",
+        "material": "ציפוי- יציקה",
+        "materialWeightGr": 2.23,
+        "additions": [],
+        "sitePrice": 349.0
+      },
+      {
+        "productType": "עגילים",
+        "modelName": "עגילי גרייס",
+        "material": "כסף יציקה",
+        "materialWeightGr": 6.0,
+        "additions": [],
+        "sitePrice": 379.0
+      },
+      {
+        "productType": "עגילים",
+        "modelName": "עגילי גרייס",
+        "material": "ציפוי- יציקה",
+        "materialWeightGr": 6.0,
+        "additions": [],
+        "sitePrice": 449.0
+      },
+      {
+        "productType": "עגילים",
+        "modelName": "עגילי יסמין מיני",
+        "material": "כסף יציקה",
+        "materialWeightGr": 0.7,
+        "additions": [],
+        "sitePrice": 229.0
+      },
+      {
+        "productType": "עגילים",
+        "modelName": "עגילי יסמין מיני",
+        "material": "ציפוי- יציקה",
+        "materialWeightGr": 0.7,
+        "additions": [],
+        "sitePrice": 269.0
+      },
+      {
+        "productType": "עגילים",
+        "modelName": "עגילי רוני",
+        "material": "14K זהב",
+        "materialWeightGr": 2.5,
+        "additions": [],
+        "sitePrice": 1600.0
+      },
+      {
+        "productType": "עגילים",
+        "modelName": "עגילי יסמין",
+        "material": "14K זהב",
+        "materialWeightGr": 4.0,
+        "additions": [],
+        "sitePrice": 1800.0
+      },
+      {
+        "productType": "עגילים",
+        "modelName": "פרח תלוי דייזי",
+        "material": "כסף",
+        "materialWeightGr": 15.0,
+        "additions": [],
+        "sitePrice": 399.0
+      },
+      {
+        "productType": "עגילים",
+        "modelName": "פרח תלוי דייזי",
+        "material": "ציפוי- כסף",
+        "materialWeightGr": 15.0,
+        "additions": [],
+        "sitePrice": 499.0
+      },
+      {
+        "productType": "טבעת",
+        "modelName": "גל מרקיזה",
+        "material": "14K זהב",
+        "materialWeightGr": 2.1,
+        "additions": [],
+        "sitePrice": 2200.0
+      },
+      {
+        "productType": "עגילים",
+        "modelName": "אסתר",
+        "material": "כסף יציקה",
+        "materialWeightGr": 9.0,
+        "additions": [],
+        "sitePrice": 399.0
+      },
+      {
+        "productType": "עגילים",
+        "modelName": "אסתר",
+        "material": "ציפוי- יציקה",
+        "materialWeightGr": 9.0,
+        "additions": [],
+        "sitePrice": 459.0
+      },
+      {
+        "productType": "צמיד",
+        "modelName": "עמית",
+        "material": "כסף",
+        "materialWeightGr": 13.0,
+        "additions": [],
+        "sitePrice": 399.0
+      },
+      {
+        "productType": "צמיד",
+        "modelName": "עמית",
+        "material": "ציפוי- כסף",
+        "materialWeightGr": 13.0,
+        "additions": [],
+        "sitePrice": 469.0
+      },
+      {
+        "productType": "צמיד",
+        "modelName": "לילי",
+        "material": "כסף",
+        "materialWeightGr": 1.75,
+        "additions": [],
+        "sitePrice": 299.0
+      },
+      {
+        "productType": "צמיד",
+        "modelName": "לילי",
+        "material": "ציפוי- כסף",
+        "materialWeightGr": 2.25,
+        "additions": [],
+        "sitePrice": 349.0
+      },
+      {
+        "productType": "צמיד",
+        "modelName": "הילה",
+        "material": "כסף",
+        "materialWeightGr": 11.0,
+        "additions": [],
+        "sitePrice": 399.0
+      },
+      {
+        "productType": "צמיד",
+        "modelName": "הילה",
+        "material": "ציפוי- כסף",
+        "materialWeightGr": 11.0,
+        "additions": [],
+        "sitePrice": 499.0
+      },
+      {
+        "productType": "צמיד",
+        "modelName": "צמיד גרייס",
+        "material": "כסף יציקה",
+        "materialWeightGr": 8.0,
+        "additions": [],
+        "sitePrice": 399.0
+      },
+      {
+        "productType": "צמיד",
+        "modelName": "צמיד גרייס",
+        "material": "ציפוי- יציקה",
+        "materialWeightGr": 8.0,
+        "additions": [],
+        "sitePrice": 489.0
+      },
+      {
+        "productType": "צמיד",
+        "modelName": "צמיד גל",
+        "material": "כסף",
+        "materialWeightGr": 5.0,
+        "additions": [],
+        "sitePrice": 299.0
+      },
+      {
+        "productType": "צמיד",
+        "modelName": "צמיד גל",
+        "material": "ציפוי- כסף",
+        "materialWeightGr": 5.0,
+        "additions": [],
+        "sitePrice": 379.0
+      },
+      {
+        "productType": "צמיד",
+        "modelName": "עמית",
+        "material": "14K זהב",
+        "materialWeightGr": 14.0,
+        "additions": [],
+        "sitePrice": 7000.0
+      },
+      {
+        "productType": "צמיד",
+        "modelName": "צמיד גל",
+        "material": "14K זהב",
+        "materialWeightGr": 10.0,
+        "additions": [],
+        "sitePrice": 3000.0
+      },
+      {
+        "productType": "צמיד",
+        "modelName": "לב",
+        "material": "14K זהב",
+        "materialWeightGr": 0.7,
+        "additions": [],
+        "sitePrice": 1500.0
+      },
+      {
+        "productType": "צמיד",
+        "modelName": "יהלום לילך",
+        "material": "14K זהב",
+        "materialWeightGr": 2.2,
+        "additions": [],
+        "sitePrice": 2000.0
+      },
+      {
+        "productType": "צמיד",
+        "modelName": "2 יהלום לילך",
+        "material": "14K זהב",
+        "materialWeightGr": 2.2,
+        "additions": [],
+        "sitePrice": 2200.0
+      },
+      {
+        "productType": "שרשרת",
+        "modelName": "טביעת אצבע",
+        "material": "14K זהב",
+        "materialWeightGr": 1.8,
+        "additions": [],
+        "sitePrice": 2200.0
+      },
+      {
+        "productType": "שרשרת",
+        "modelName": "בליס",
+        "material": "כסף יציקה",
+        "materialWeightGr": 1.8,
+        "additions": [],
+        "sitePrice": 349.0
+      },
+      {
+        "productType": "שרשרת",
+        "modelName": "בליס",
+        "material": "ציפוי- יציקה",
+        "materialWeightGr": 1.8,
+        "additions": [],
+        "sitePrice": 379.0
+      },
+      {
+        "productType": "שרשרת",
+        "modelName": "לוונדר",
+        "material": "14K זהב",
+        "materialWeightGr": 5.0,
+        "additions": [],
+        "sitePrice": 4000.0
+      },
+      {
+        "productType": "שרשרת",
+        "modelName": "חמסה",
+        "material": "כסף יציקה",
+        "materialWeightGr": 0.2,
+        "additions": [],
+        "sitePrice": 359.0
+      },
+      {
+        "productType": "שרשרת",
+        "modelName": "חמסה",
+        "material": "ציפוי- יציקה",
+        "materialWeightGr": 0.2,
+        "additions": [],
+        "sitePrice": 389.0
+      },
+      {
+        "productType": "שרשרת",
+        "modelName": "חמסה",
+        "material": "14K זהב",
+        "materialWeightGr": 1.1,
+        "additions": [],
+        "sitePrice": 1800.0
+      },
+      {
+        "productType": "שרשרת",
+        "modelName": "זהב ואבן",
+        "material": "14K זהב",
+        "materialWeightGr": 1.26,
+        "additions": [],
+        "sitePrice": 2300.0
+      },
+      {
+        "productType": "שרשרת",
+        "modelName": "לב גדול",
+        "material": "14K זהב",
+        "materialWeightGr": 1.288,
+        "additions": [],
+        "sitePrice": null
+      },
+      {
+        "productType": "שרשרת",
+        "modelName": "יסמין",
+        "material": "כסף יציקה",
+        "materialWeightGr": 3.5,
+        "additions": [],
+        "sitePrice": 359.0
+      },
+      {
+        "productType": "שרשרת",
+        "modelName": "יסמין",
+        "material": "ציפוי- יציקה",
+        "materialWeightGr": 3.5,
+        "additions": [],
+        "sitePrice": 419.0
+      },
+      {
+        "productType": "שרשרת",
+        "modelName": "זהב ואבן",
+        "material": "14K זהב",
+        "materialWeightGr": 1.29,
+        "additions": [],
+        "sitePrice": 2300.0
+      },
+      {
+        "productType": "שרשרת",
+        "modelName": "לב קטן",
+        "material": "14K זהב",
+        "materialWeightGr": 0.7,
+        "additions": [],
+        "sitePrice": 1750.0
+      },
+      {
+        "productType": "שרשרת",
+        "modelName": "אותיות",
+        "material": "14K זהב",
+        "materialWeightGr": 1.0,
+        "additions": [],
+        "sitePrice": 2000.0
+      },
+      {
+        "productType": "שרשרת",
+        "modelName": "לב",
+        "material": "כסף יציקה",
+        "materialWeightGr": 2.0,
+        "additions": [],
+        "sitePrice": 299.0
+      },
+      {
+        "productType": "טבעת",
+        "modelName": "אילה לב",
+        "material": "14K זהב",
+        "materialWeightGr": 4.0,
+        "additions": [],
+        "sitePrice": 2200.0
+      },
+      {
+        "productType": "שרשרת",
+        "modelName": "לילך יהלום",
+        "material": "14K זהב",
+        "materialWeightGr": 2.2,
+        "additions": [],
+        "sitePrice": 3000.0
+      },
+      {
+        "productType": "שרשרת",
+        "modelName": "לילך 2 יהלום",
+        "material": "14K זהב",
+        "materialWeightGr": 2.2,
+        "additions": [],
+        "sitePrice": 3300.0
+      },
+      {
+        "productType": "שרשרת",
+        "modelName": "לינקס",
+        "material": "14K זהב",
+        "materialWeightGr": 0.8,
+        "additions": [],
+        "sitePrice": 2000.0
+      },
+      {
+        "productType": "שרשרת",
+        "modelName": "לינקס",
+        "material": "14K זהב",
+        "materialWeightGr": 0.8,
+        "additions": [],
+        "sitePrice": 2500.0
+      },
+      {
+        "productType": "טבעת",
+        "modelName": "גל עם אבן חן",
+        "material": "14K זהב",
+        "materialWeightGr": 2.1,
+        "additions": [],
+        "sitePrice": 1800.0
+      },
+      {
+        "productType": "שרשרת",
+        "modelName": "לב ואבן",
+        "material": "14K זהב",
+        "materialWeightGr": 0.9,
+        "additions": [],
+        "sitePrice": 1750.0
+      },
+      {
+        "productType": "טבעת",
+        "modelName": "חותם לגבר",
+        "material": "14K זהב",
+        "materialWeightGr": 5.0,
+        "additions": [],
+        "sitePrice": 0.0
+      },
+      {
+        "productType": "טבעת",
+        "modelName": "טבעת ארורה",
+        "material": "14K זהב",
+        "materialWeightGr": 3.5,
+        "additions": [],
+        "sitePrice": 3000.0
+      },
+      {
+        "productType": "שרשרת",
+        "modelName": "פלורה (פרח אחד)",
+        "material": "ציפוי- יציקה",
+        "materialWeightGr": 1.3,
+        "additions": [],
+        "sitePrice": 359.0
+      },
+      {
+        "productType": "שרשרת",
+        "modelName": "פלורה (פרח אחד)",
+        "material": "כסף יציקה",
+        "materialWeightGr": 1.3,
+        "additions": [],
+        "sitePrice": 329.0
+      },
+      {
+        "productType": "צמיד",
+        "modelName": "פלורה",
+        "material": "ציפוי- יציקה",
+        "materialWeightGr": 1.3,
+        "additions": [],
+        "sitePrice": 349.0
+      },
+      {
+        "productType": "צמיד",
+        "modelName": "פלורה",
+        "material": "כסף יציקה",
+        "materialWeightGr": 1.3,
+        "additions": [],
+        "sitePrice": 319.0
+      },
+      {
+        "productType": "שרשרת",
+        "modelName": "דליה",
+        "material": "ציפוי- יציקה",
+        "materialWeightGr": 1.3,
+        "additions": [],
+        "sitePrice": 359.0
+      },
+      {
+        "productType": "שרשרת",
+        "modelName": "דליה",
+        "material": "כסף יציקה",
+        "materialWeightGr": 1.3,
+        "additions": [],
+        "sitePrice": 329.0
+      },
+      {
+        "productType": "שרשרת",
+        "modelName": "טבעת נישואין באבלס 4 מ״מ",
+        "material": "14K זהב",
+        "materialWeightGr": 5.0,
+        "additions": [],
+        "sitePrice": 2650.0
+      },
+      {
+        "productType": "עגילים",
+        "modelName": "עגילי אבן קטנות",
+        "material": "14K זהב",
+        "materialWeightGr": 0.5,
+        "additions": [],
+        "sitePrice": 950.0
+      },
+      {
+        "productType": "שרשרת",
+        "modelName": "בליס",
+        "material": "14K זהב",
+        "materialWeightGr": 2.0,
+        "additions": [],
+        "sitePrice": 2300.0
+      },
+      {
+        "productType": "שרשרת",
+        "modelName": "עגילי יהל",
+        "material": "14K זהב",
+        "materialWeightGr": 9.0,
+        "additions": [],
+        "sitePrice": null
+      },
+      {
+        "productType": "טבעת",
+        "modelName": "מיטל (ליילה)",
+        "material": "14K זהב",
+        "materialWeightGr": 2.5,
+        "additions": [],
+        "sitePrice": 2500.0
+      },
+      {
+        "productType": "טבעת",
+        "modelName": "טבעת אופיר",
+        "material": "14K זהב",
+        "materialWeightGr": 4.0,
+        "additions": [],
+        "sitePrice": 3200.0
+      },
+      {
+        "productType": "שרשרת",
+        "modelName": "ספיר וורוד (עלמה)",
+        "material": "14K זהב",
+        "materialWeightGr": 2.0,
+        "additions": [],
+        "sitePrice": 3000.0
+      },
+      {
+        "productType": "טבעת",
+        "modelName": "ארורה יהלום 1 קארט",
+        "material": "14K זהב",
+        "materialWeightGr": 3.5,
+        "additions": [],
+        "sitePrice": 4000.0
+      },
+      {
+        "productType": "עגילים",
+        "modelName": "י יהל",
+        "material": "כסף יציקה",
+        "materialWeightGr": 4.0,
+        "additions": [],
+        "sitePrice": 450.0
+      },
+      {
+        "productType": "עגילים",
+        "modelName": "יהל",
+        "material": "ציפוי- יציקה",
+        "materialWeightGr": 4.0,
+        "additions": [],
+        "sitePrice": 500.0
+      },
+      {
+        "productType": "עגילים",
+        "modelName": "עגיל ספיר ורוד בודד",
+        "material": "14K זהב",
+        "materialWeightGr": 0.3,
+        "additions": [],
+        "sitePrice": null
+      },
+      {
+        "productType": "שרשרת",
+        "modelName": "טבעת אביטל",
+        "material": "14K זהב",
+        "materialWeightGr": 3.0,
+        "additions": [],
+        "sitePrice": 2600.0
+      },
+      {
+        "productType": "טבעת",
+        "modelName": "טבעץ אירוסין",
+        "material": "14K זהב",
+        "materialWeightGr": 4.0,
+        "additions": [],
+        "sitePrice": null
+      },
+      {
+        "productType": "טבעת",
+        "modelName": "לב קטנטנה",
+        "material": "14K זהב",
+        "materialWeightGr": 2.5,
+        "additions": [],
+        "sitePrice": null
+      },
+      {
+        "productType": "שרשרת",
+        "modelName": "שרשרת ליילה",
+        "material": "14K זהב",
+        "materialWeightGr": 2.1,
+        "additions": [],
+        "sitePrice": 3200.0
+      },
+      {
+        "productType": "צמיד",
+        "modelName": "צמיד לילה",
+        "material": "14K זהב",
+        "materialWeightGr": 2.0,
+        "additions": [],
+        "sitePrice": 2650.0
+      },
+      {
+        "productType": "עגילים",
+        "modelName": "פרח שיבוץ (נטע)",
+        "material": "14K זהב",
+        "materialWeightGr": 0.9,
+        "additions": [],
+        "sitePrice": 1200.0
+      },
+      {
+        "productType": "שרשרת",
+        "modelName": "פרח שיבוץ (נטע)",
+        "material": "14K זהב",
+        "materialWeightGr": 0.8,
+        "additions": [],
+        "sitePrice": 2000.0
+      },
+      {
+        "productType": "שרשרת",
+        "modelName": "פרח שיבוץ",
+        "material": "ציפוי- יציקה",
+        "materialWeightGr": 4.0,
+        "additions": [],
+        "sitePrice": 450.0
+      },
+      {
+        "productType": "שרשרת",
+        "modelName": "טבעת עדי (אהבה)",
+        "material": "14K זהב",
+        "materialWeightGr": 2.8,
+        "additions": [],
+        "sitePrice": 2650.0
+      },
+      {
+        "productType": "שרשרת",
+        "modelName": "שרשרת חמסה חדשה",
+        "material": "14K זהב",
+        "materialWeightGr": 1.0,
+        "additions": [],
+        "sitePrice": 2100.0
+      },
+      {
+        "productType": "צמיד",
+        "modelName": "חמסה חדשה",
+        "material": "14K זהב",
+        "materialWeightGr": 1.0,
+        "additions": [],
+        "sitePrice": 1700.0
+      },
+      {
+        "productType": "שרשרת",
+        "modelName": "ציפור ניקולס",
+        "material": "14K זהב",
+        "materialWeightGr": 1.8,
+        "additions": [],
+        "sitePrice": 1900.0
+      }
+    ]
+  ]
+}

@@ -722,26 +722,21 @@ tr:hover {
 }
 
 /* Row numbering column styling */
-#ordersTable th:first-child {
-    width: 40px;
-    text-align: center;
-    background-color: #f8f9fa;
+
+/* Recommended minimum price column styling */
+table th:nth-child(7) {
+    background-color: #e8f5e8;
+    color: #2e7d32;
     font-weight: bold;
+    border: 2px solid #4caf50;
 }
 
-#ordersTable td:first-child {
-    width: 40px;
-    text-align: center;
-    background-color: #f8f9fa;
+table td:nth-child(7) {
+    background-color: #e8f5e8 !important;
+    color: #2e7d32;
     font-weight: bold;
-    color: #666;
-    font-size: 14px;
-}
-
-/* Status badge colors */
-.status-badge.status-new {
-    background-color: #dc3545;
-    color: white;
+    border-left: 2px solid #4caf50;
+    border-right: 2px solid #4caf50;
 }
 
 .status-badge.status-paid_preparing {
@@ -830,4 +825,50 @@ tr:hover {
     min-width: 30px;
     text-align: center;
     font-weight: bold;
+}
+
+/* Row number column styling for products table */
+.row-number-header,
+.row-number {
+    width: 50px;
+    min-width: 50px;
+    max-width: 50px;
+    text-align: center;
+    font-weight: bold;
+    background-color: #f8f9fa;
+    color: #495057;
+}
+
+.row-number-header {
+    background-color: #e9ecef;
+    border-right: 2px solid #dee2e6;
+}
+
+.row-number {
+    background-color: #f8f9fa;
+    border-right: 1px solid #dee2e6;
+    font-size: 14px;
+}
+
+/* Low profit warning styles */
+.low-profit-warning {
+    background-color: #ffebee !important;
+    border-left: 4px solid #f44336 !important;
+    animation: pulse-warning 2s infinite;
+}
+
+.low-profit-warning:hover {
+    background-color: #ffcdd2 !important;
+}
+
+.low-profit-warning .row-number {
+    background-color: #ffcdd2 !important;
+    color: #c62828;
+    font-weight: bold;
+}
+
+@keyframes pulse-warning {
+    0% { border-left-color: #f44336; }
+    50% { border-left-color: #ff5722; }
+    100% { border-left-color: #f44336; }
 }

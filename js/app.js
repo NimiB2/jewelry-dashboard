@@ -511,6 +511,17 @@ function onPageLoad() {
     if (window.App && App.Managers && App.Managers.orderManager) {
         App.Managers.orderManager.initializeOrderForm();
     }
+    // Fix any decimal IDs in products on page load
+    setTimeout(() => {
+        if (window.fixAllProductIds) {
+            fixAllProductIds();
+        }
+    }, 1000);
+    
+    // Set default tab to orders (ניהול הזמנות)
+    setTimeout(() => {
+        switchTab('orders');
+    }, 100);
 }
 
 if (document.readyState === 'loading') {
@@ -522,6 +533,7 @@ if (document.readyState === 'loading') {
 // Expose collection functions to window to ensure inline handlers work
 window.addCollection = addCollection;
 window.renameCollection = renameCollection;
+window.fixAllProductIds = fixAllProductIds;
 window.deleteCollection = deleteCollection;
 window.renderCollectionsManager = renderCollectionsManager;
 window.renderCollectionsChecklist = renderCollectionsChecklist;
@@ -609,6 +621,12 @@ function saveSettings() {
 
     updatePricing();
     loadExpenseData();
+    
+    // Refresh products display to reflect new settings
+    // These old settings affect material prices and labor, so they impact existing products
+    if (window.refreshProductsAfterSettingsChange) {
+        window.refreshProductsAfterSettingsChange(['חומרים – עלויות ועבודה']);
+    }
 }
 
 function setupEventListeners() {
@@ -672,6 +690,11 @@ function switchTab(tabName) {
         // Load expense data automatically when entering expenses page
         if (window.App && App.Managers && App.Managers.expenseManager) {
             App.Managers.expenseManager.loadExpenseData();
+        }
+    } else if (tabName === 'orders') {
+        // Load orders data automatically when entering orders page
+        if (window.App && App.Managers && App.Managers.orderManager) {
+            App.Managers.orderManager.loadOrders();
         }
     }
 }
@@ -1063,21 +1086,103 @@ function getPricingConstantsTotal() {
     return total;
 }
 
-// פונקציה לחישוב מכפלת כל העמלות
+// פונקציה לחישוב מכפלת כל העמלות (דינמית - כוללת כל העמלות בקטגוריה)
 function getAllFeesMultiplier() {
-    const vatMultiplier = getVatMultiplier();
-    const clearingFeeMultiplier = getClearingFeeMultiplier();
-    const fixedExpensesFeeMultiplier = getFixedExpensesFeeMultiplier();
+    const settingsObj = getSettingsObject();
+    const feesCategory = findCategory(settingsObj, 'עמלות');
     
-    const totalMultiplier = vatMultiplier * clearingFeeMultiplier * fixedExpensesFeeMultiplier;
-    console.log('All fees calculation:', {
-        vatMultiplier,
-        clearingFeeMultiplier,
-        fixedExpensesFeeMultiplier,
-        totalMultiplier
+    if (!feesCategory) {
+        console.warn('לא נמצאה קטגוריית עמלות, משתמש בערכי ברירת מחדל');
+        return 1.0;
+    }
+    
+    let totalMultiplier = 1.0;
+    const feeDetails = {};
+    
+    // עבור על כל הפריטים בקטגוריית עמלות
+    if (feesCategory.items && Array.isArray(feesCategory.items)) {
+        feesCategory.items.forEach(item => {
+            if (item && item.name && item.value !== undefined) {
+                let multiplier = Number(item.value) || 0;
+                
+                // אם הערך קטן מ-1, זה כנראה אחוז (כמו 0.18 למע"מ 18%)
+                // אז נהפוך אותו למכפיל (1.18)
+                if (multiplier > 0 && multiplier < 1) {
+                    multiplier = 1 + multiplier;
+                }
+                
+                // אם הערך גדול מ-1, זה כבר מכפיל (כמו 1.18)
+                if (multiplier >= 1) {
+                    totalMultiplier *= multiplier;
+                    feeDetails[item.name] = multiplier;
+                }
+            }
+        });
+    }
+    
+    // עבור על תת-קטגוריות אם יש
+    if (feesCategory.subcategories && Array.isArray(feesCategory.subcategories)) {
+        feesCategory.subcategories.forEach(subcat => {
+            if (subcat.items && Array.isArray(subcat.items)) {
+                subcat.items.forEach(item => {
+                    if (item && item.name && item.value !== undefined) {
+                        let multiplier = Number(item.value) || 0;
+                        
+                        if (multiplier > 0 && multiplier < 1) {
+                            multiplier = 1 + multiplier;
+                        }
+                        
+                        if (multiplier >= 1) {
+                            totalMultiplier *= multiplier;
+                            feeDetails[`${subcat.name} - ${item.name}`] = multiplier;
+                        }
+                    }
+                });
+            }
+        });
+    }
+    
+    console.log('🧮 Dynamic fees calculation:', {
+        feesFound: Object.keys(feeDetails).length,
+        feeDetails,
+        totalMultiplier: totalMultiplier.toFixed(4)
     });
     
     return totalMultiplier;
+}
+
+// פונקציה לבדיקת כל העמלות הקיימות
+function testAllFees() {
+    console.log('🧮 === בדיקת כל העמלות ===');
+    const settingsObj = getSettingsObject();
+    const feesCategory = findCategory(settingsObj, 'עמלות');
+    
+    if (!feesCategory) {
+        console.log('❌ לא נמצאה קטגוריית עמלות');
+        return;
+    }
+    
+    console.log('📋 עמלות קיימות:');
+    
+    if (feesCategory.items && Array.isArray(feesCategory.items)) {
+        feesCategory.items.forEach((item, index) => {
+            console.log(`  ${index + 1}. ${item.name}: ${item.value}`);
+        });
+    }
+    
+    if (feesCategory.subcategories && Array.isArray(feesCategory.subcategories)) {
+        feesCategory.subcategories.forEach(subcat => {
+            console.log(`📁 תת-קטגוריה: ${subcat.name}`);
+            if (subcat.items && Array.isArray(subcat.items)) {
+                subcat.items.forEach((item, index) => {
+                    console.log(`    ${index + 1}. ${item.name}: ${item.value}`);
+                });
+            }
+        });
+    }
+    
+    const totalMultiplier = getAllFeesMultiplier();
+    console.log(`🎯 מכפלת כל העמלות: ${totalMultiplier.toFixed(4)}`);
 }
 
 // פונקציה לקבלת סכום קבועי תמחור תכשיטים בלבד
@@ -1088,17 +1193,20 @@ function getJewelryPricingConstantsTotal() {
     
     let total = 0;
     
-    // חישוב סכום מהפריטים של הקטגוריה
-    if (Array.isArray(jewelryCategory.items)) {
-        jewelryCategory.items.forEach(item => {
-            const value = Number(item.value || 0);
-            if (!isNaN(value)) total += value;
-        });
-    }
+    // חישוב סכום מהפריטים של הקטגוריה (כולל 'סה"כ אריזה' ו'משלוח בארץ')
+    const categoryItems = Array.isArray(jewelryCategory.items) ? jewelryCategory.items : [];
+    const hasPackagingTotalItem = categoryItems.some(it => (it?.name || '') === 'סה"כ אריזה');
+    categoryItems.forEach(item => {
+        const value = Number(item.value || 0);
+        if (!isNaN(value)) total += value;
+    });
     
-    // חישוב סכום מתת-קטגוריות
+    // חישוב סכום מתת-קטגוריות, תוך הימנעות מכפל: אם יש 'סה"כ אריזה' ברמת הקטגוריה,
+    // לא נסכום את פרטי 'פירוט אריזה' שוב.
     if (Array.isArray(jewelryCategory.subcategories)) {
         jewelryCategory.subcategories.forEach(subcategory => {
+            const isPackagingBreakdown = (subcategory?.name || '') === 'פירוט אריזה';
+            if (hasPackagingTotalItem && isPackagingBreakdown) return;
             if (Array.isArray(subcategory.items)) {
                 subcategory.items.forEach(item => {
                     const value = Number(item.value || 0);
@@ -1108,7 +1216,7 @@ function getJewelryPricingConstantsTotal() {
         });
     }
     
-    console.log('getJewelryPricingConstantsTotal result:', total);
+    console.log('getJewelryPricingConstantsTotal result:', total, hasPackagingTotalItem ? '(using category-level packaging total)' : '');
     return total;
 }
 
@@ -1118,7 +1226,7 @@ function testNewPricingStructure() {
     console.log('מע"מ:', getVatMultiplier());
     console.log('מקדם עמלת סליקה:', getClearingFeeMultiplier());
     console.log('מקדם עמלת הוצאות קבועות:', getFixedExpensesFeeMultiplier());
-    console.log('מכפלת כל העמלות:', getAllFeesMultiplier());
+    console.log('🆕 מכפלת כל העמלות (דינמית):', getAllFeesMultiplier());
     console.log('מחיר עבודה לשעה:', getLaborHourRate());
     console.log('סכום קבועי תמחור תכשיטים:', getJewelryPricingConstantsTotal());
     
@@ -1331,6 +1439,37 @@ function loadOrders() {
     return App.Managers.orderManager.loadOrders();
 }
 
+// Utility function to fix all decimal IDs in products
+function fixAllProductIds() {
+    if (window.App && App.Managers && App.Managers.productManager) {
+        const repo = window.App.Repositories.ProductRepository;
+        let products = repo.getAll();
+        let fixedCount = 0;
+        
+        products.forEach(product => {
+            if (product.id !== Math.floor(product.id)) {
+                console.log(`Fixing ID: ${product.id} -> ${Math.floor(product.id)} for "${product.name}"`);
+                product.id = Math.floor(product.id);
+                fixedCount++;
+            }
+        });
+        
+        if (fixedCount > 0) {
+            repo.saveAll(products);
+            console.log(`✅ Fixed ${fixedCount} decimal IDs in products database`);
+            // Reload the products display
+            App.Managers.productManager.loadProducts();
+        } else {
+            console.log('✅ All product IDs are already integers - no fixes needed');
+        }
+        
+        return fixedCount;
+    } else {
+        console.error('Product manager not available');
+        return 0;
+    }
+}
+
 function showAddOrderModal() {
     return App.Managers.orderManager.showAddOrderModal();
 }
@@ -1445,3 +1584,6 @@ function addEditAdditionRow() {
         App.Managers.productManager.addEditAdditionRow();
     }
 }
+
+// Make test functions globally available
+window.testAllFees = testAllFees;

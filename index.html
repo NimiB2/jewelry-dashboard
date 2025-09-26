@@ -22,7 +22,7 @@
 
         <div class="content">
             <!-- Settings Section -->
-            <div id="settings" class="section active">
+            <div id="settings" class="section">
                 <div class="settings-panel">
                     <style>
                       /* Scoped to settings panel only */
@@ -339,11 +339,13 @@
                     <table id="productsTable">
                         <thead>
                             <tr>
+                                <th class="row-number-header">#</th>
                                 <th>סוג</th>
                                 <th>שם</th>
                                 <th>חומר</th>
                                 <th>קולקציה</th>
                                 <th>סה"כ הוצאות</th>
+                                <th>מחיר מינימלי מומלץ (30%)</th>
                                 <th>מחיר לפני הנחה</th>
                                 <th>מחיר אחרי הנחה</th>
                                 <th>רווח (₪)</th>
@@ -1019,13 +1021,72 @@
 
         function commitCategories(){
           if (!__categoriesDraft) return;
+          
+          // Get current categories before saving changes
           const s = getSettingsSafe();
+          const oldCategories = s.categories || {};
+          
+          // Save new categories
           s.categories = normalize(__categoriesDraft);
           setSettingsSafe(s);
+          
+          // Detect which categories changed (added, removed, or modified)
+          const changedCategories = detectChangedCategories(oldCategories, s.categories);
+          
           __categoriesDraft = null;
           setSettingsDirty(false);
           try { const ok = document.getElementById('settingsSaved'); if (ok) { ok.style.display='inline'; setTimeout(()=>ok.style.display='none', 1200); } } catch{}
           renderCategories();
+          
+          // Refresh products display to reflect new settings
+          if (window.refreshProductsAfterSettingsChange) {
+            window.refreshProductsAfterSettingsChange(changedCategories);
+          }
+        }
+        
+        // Helper function to detect which categories have changed
+        function detectChangedCategories(oldCategories, newCategories) {
+          const changedCategories = new Set();
+          
+          console.log('🔍 Detecting category changes...');
+          console.log('📋 Old categories:', Object.keys(oldCategories || {}));
+          console.log('📋 New categories:', Object.keys(newCategories || {}));
+          
+          // Check all category names from both old and new
+          const allCategoryNames = new Set([
+            ...Object.keys(oldCategories || {}),
+            ...Object.keys(newCategories || {})
+          ]);
+          
+          for (const categoryName of allCategoryNames) {
+            const oldCategory = oldCategories[categoryName];
+            const newCategory = newCategories[categoryName];
+            
+            console.log(`🔎 Checking category: "${categoryName}"`);
+            
+            // Category was added or removed
+            if (!oldCategory || !newCategory) {
+              console.log(`➕➖ Category "${categoryName}" was ${!oldCategory ? 'added' : 'removed'}`);
+              changedCategories.add(categoryName);
+              continue;
+            }
+            
+            // Check if items were added/removed/modified
+            const oldJson = JSON.stringify(oldCategory);
+            const newJson = JSON.stringify(newCategory);
+            
+            if (oldJson !== newJson) {
+              console.log(`🔄 Category "${categoryName}" was modified`);
+              console.log('📊 Old structure:', oldCategory);
+              console.log('📊 New structure:', newCategory);
+              changedCategories.add(categoryName);
+            } else {
+              console.log(`✅ Category "${categoryName}" unchanged`);
+            }
+          }
+          
+          console.log('🎯 Final detected changed categories:', Array.from(changedCategories));
+          return Array.from(changedCategories);
         }
 
         function discardCategoryChanges(){
@@ -1084,7 +1145,7 @@
               const vStr = prompt('ערך מספרי (ניתן לעדכון לאחר מכן):', '0');
               const v = Number(vStr||0);
               cat.items = cat.items || [];
-              cat.items.push({ name: n.trim(), value: v });
+              cat.items.push({ name:n, value:v });
               markDirty(); renderCategories();
             });
 
@@ -1384,5 +1445,7 @@
         });
       })();
     </script>
+    <!-- Bulk Product Import Script -->
+    <script src="bulk_product_import.js"></script>
 </body>
 </html>

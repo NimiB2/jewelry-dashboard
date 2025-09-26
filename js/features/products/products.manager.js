@@ -43,16 +43,18 @@ class ProductManager {
       // keep default 'כללי'
     }
 
+    const material = document.getElementById('material').value;
     const product = {
       id: Date.now(),
       type: document.getElementById('productType').value,
       name: (document.getElementById('productName')?.value || 'דגם חדש').trim(),
-      material: document.getElementById('material').value,
+      material: material,
       // According to the model, cost base = Final Expenses (after VAT, before profit multiplier)
       cost: parseFloat((document.getElementById('finalExpenses')?.textContent || '0').replace('₪', '')) || 0,
       price: parseFloat(document.getElementById('recommendedPrice').textContent.replace('₪', '')),
       sitePrice: parseFloat(document.getElementById('sitePriceInput')?.value || '0') || 0,
       weight: parseFloat(document.getElementById('weight')?.value || '0') || 0,
+      laborTime: this.getLaborTimeForMaterial(material), // Store labor time at creation
       additions,
       collections
     };
@@ -77,6 +79,10 @@ class ProductManager {
     const repo = window.App.Repositories.ProductRepository;
     // Ensure latest state
     products = repo.getAll();
+    
+    // Fix any decimal IDs in existing products
+    this.fixDecimalIds();
+    
     const tbody = document.getElementById('productsTable').querySelector('tbody');
     tbody.innerHTML = '';
     
@@ -110,29 +116,42 @@ class ProductManager {
       return true;
     });
 
-    filtered.forEach(p => {
+    filtered.forEach((p, index) => {
       const row = tbody.insertRow();
       
       // Calculate collections text
       const collectionsText = Array.isArray(p.collections) ? p.collections.join(', ') : 'כללי';
       
-      // Calculate pricing with discount
-      const currentCost = p.cost || 0;
+      // Calculate pricing with discount using dynamic cost calculation
+      const currentCost = this.calculateDynamicCost(p); // Use dynamic cost based on current settings
+      const recommendedMinPrice = currentCost / 0.7; // 30% profit minimum (cost / 0.7 = price with 30% profit)
       const originalPrice = p.sitePrice || p.price || 0;
       const discountedPrice = originalPrice * (1 - discountPercent / 100);
       const profitAmount = discountedPrice - currentCost;
       const profitPercent = currentCost > 0 ? (profitAmount / currentCost) * 100 : 0;
       
+      // Check if profit is below 30% for warning styling
+      const isLowProfit = profitPercent < 30;
+      
+      // Apply warning styling to the entire row if profit is below 30%
+      if (isLowProfit) {
+        row.style.backgroundColor = '#ffebee';
+        row.style.borderLeft = '4px solid #f44336';
+        row.classList.add('low-profit-warning');
+      }
+      
       row.innerHTML = `
+            <td class="row-number">${index + 1}</td>
             <td>${p.type || ''}</td>
-            <td>${p.name || ''}</td>
+            <td>${p.name || ''} ${isLowProfit ? '<span style="color: #f44336; font-weight: bold;">⚠️</span>' : ''}</td>
             <td>${p.material || ''}</td>
             <td>${collectionsText}</td>
-            <td>₪${currentCost.toFixed(2)}</td>
+            <td title="עלות מחושבת דינמית על בסיס ההגדרות הנוכחיות">₪${currentCost.toFixed(2)}</td>
+            <td title="מחיר מינימלי לרווח של 30%" style="background-color: #e8f5e8; font-weight: bold;">₪${recommendedMinPrice.toFixed(2)}</td>
             <td>₪${originalPrice.toFixed(2)}</td>
             <td>₪${discountedPrice.toFixed(2)}</td>
             <td style="color: ${profitAmount >= 0 ? 'green' : 'red'}">₪${profitAmount.toFixed(2)}</td>
-            <td style="color: ${profitPercent >= 0 ? 'green' : 'red'}">${profitPercent.toFixed(1)}%</td>
+            <td style="color: ${isLowProfit ? '#f44336' : (profitPercent >= 0 ? 'green' : 'red')}; font-weight: ${isLowProfit ? 'bold' : 'normal'}">${profitPercent.toFixed(1)}% ${isLowProfit ? '⚠️' : ''}</td>
             <td class="action-buttons">
                 <button class="btn-small btn-warning" onclick="showEditProductModal(${p.id})">ערוך</button>
                 <button class="btn-small btn-danger" onclick="deleteProduct(${p.id})">מחק</button>
@@ -195,7 +214,16 @@ class ProductManager {
   }
 
   showEditProductModal(id) {
-    const product = products.find(p => p.id === id);
+    const repo = window.App.Repositories.ProductRepository;
+    // Ensure latest state
+    products = repo.getAll();
+    
+    // Fix any decimal IDs in existing products
+    this.fixDecimalIds();
+    
+    // Convert id to number to ensure proper comparison
+    const numericId = parseInt(id);
+    const product = products.find(p => p.id === numericId);
     if (product) {
       document.getElementById('editProductId').value = product.id;
       document.getElementById('editProductType').value = product.type;
@@ -214,6 +242,9 @@ class ProductManager {
       this.updateEditPricing();
       
       openModal('editProductModal');
+    } else {
+      console.error('Product not found with ID:', id, 'Converted to:', numericId);
+      alert('שגיאה: לא נמצא מוצר עם המזהה המבוקש. אנא רענן את הדף ונסה שוב.');
     }
   }
 
@@ -252,15 +283,17 @@ class ProductManager {
       const profitMult = this.getProfitMultiplier(material);
       const finalExpenses = profitMult > 0 ? recommendedPrice / profitMult : 0;
 
+      const newMaterial = document.getElementById('editProductMaterial').value;
       products[index] = {
         ...products[index],
         type: document.getElementById('editProductType').value,
         name: document.getElementById('editProductName').value,
-        material: document.getElementById('editProductMaterial').value,
+        material: newMaterial,
         weight: parseFloat(document.getElementById('editProductWeight').value) || 0,
         cost: finalExpenses,
         price: recommendedPrice,
         sitePrice: parseFloat(document.getElementById('editProductSitePrice').value),
+        laborTime: this.getLaborTimeForMaterial(newMaterial), // Update labor time if material changed
         additions,
         collections
       };
@@ -356,16 +389,21 @@ class ProductManager {
       if (!isNaN(val)) additionsSum += val;
     });
 
-    const packaging = this.getPackagingTotal();
-    const shipping = this.getDomesticShipping();
-    const generalExpenses = materialCost + additionsSum + packaging + shipping;
+    // Step B: Use full jewelry pricing constants total (avoids double counting packaging breakdown)
+    const jewelryPricingConstants = window.getJewelryPricingConstantsTotal
+      ? window.getJewelryPricingConstantsTotal()
+      : (this.getPackagingTotal() + this.getDomesticShipping());
+    const generalExpenses = materialCost + additionsSum + jewelryPricingConstants;
 
     const laborTime = this.getLaborTimeForMaterial(material);
     const laborCost = laborTime * this.getLaborHourRate();
     const workAndExpenses = generalExpenses + laborCost;
 
-    const expensesWithFees = workAndExpenses * this.getClearingFeeMultiplier() * this.getFixedExpensesFeeMultiplier();
-    const finalExpenses = expensesWithFees * this.getVatMultiplier();
+    // Step D: Apply combined fees multiplier for consistency with main calculator
+    const allFeesMultiplier = window.getAllFeesMultiplier
+      ? window.getAllFeesMultiplier()
+      : (this.getClearingFeeMultiplier() * this.getFixedExpensesFeeMultiplier() * this.getVatMultiplier());
+    const finalExpenses = workAndExpenses * allFeesMultiplier;
     const profitMult = this.getProfitMultiplier(material);
     const recommendedPrice = finalExpenses * profitMult;
 
@@ -376,6 +414,63 @@ class ProductManager {
     if (sitePriceInput) {
       sitePriceInput.value = recommendedPrice.toFixed(2);
     }
+  }
+
+  // Dynamic cost calculation based on current settings
+  // Only recalculates components that should be dynamic for existing products
+  calculateDynamicCost(product) {
+    if (!product.material || !product.weight) {
+      return product.cost || 0; // Fallback to stored cost if no material/weight data
+    }
+
+    try {
+      // Step A: Material costs (DYNAMIC - current material prices)
+      const pricePerGram = this.getMaterialPricePerGram(product.material);
+      const materialCost = pricePerGram * product.weight;
+      
+      // Sum additions (STATIC - use stored additions from product)
+      let additionsSum = 0;
+      if (product.additions && Array.isArray(product.additions)) {
+        additionsSum = product.additions.reduce((sum, addition) => {
+          return sum + (parseFloat(addition.price) || 0);
+        }, 0);
+      }
+
+      // Step B: Use jewelry pricing constants total (DYNAMIC - current constants)
+      const jewelryPricingConstants = window.getJewelryPricingConstantsTotal
+        ? window.getJewelryPricingConstantsTotal()
+        : (this.getPackagingTotal() + this.getDomesticShipping());
+      const generalExpenses = materialCost + additionsSum + jewelryPricingConstants;
+
+      // Step C: Work and expenses (MIXED - current labor rate, but stored labor time)
+      // Use stored labor time if available, otherwise calculate from current settings
+      let laborTime;
+      if (product.laborTime !== undefined) {
+        laborTime = product.laborTime; // Use stored labor time
+      } else {
+        laborTime = this.getLaborTimeForMaterial(product.material); // Fallback to current settings
+      }
+      const laborCost = laborTime * this.getLaborHourRate(); // Current labor rate
+      const workAndExpenses = generalExpenses + laborCost;
+
+      // Step D: Apply combined fees multiplier (DYNAMIC - current fees)
+      const allFeesMultiplier = window.getAllFeesMultiplier
+        ? window.getAllFeesMultiplier()
+        : (this.getClearingFeeMultiplier() * this.getFixedExpensesFeeMultiplier() * this.getVatMultiplier());
+      const finalExpenses = workAndExpenses * allFeesMultiplier;
+
+      return finalExpenses;
+    } catch (error) {
+      console.warn('Error calculating dynamic cost for product:', product.name, error);
+      return product.cost || 0; // Fallback to stored cost
+    }
+  }
+
+  // Calculate dynamic recommended price based on current settings
+  calculateDynamicPrice(product) {
+    const dynamicCost = this.calculateDynamicCost(product);
+    const profitMultiplier = this.getProfitMultiplier(product.material);
+    return dynamicCost * profitMultiplier;
   }
 
   // Helper methods for pricing calculations
@@ -420,11 +515,74 @@ class ProductManager {
       const repo = window.App.Repositories.ProductRepository;
       // Ensure latest state
       products = repo.getAll();
-      products = products.filter(p => p.id !== id);
+      // Convert id to number to ensure proper comparison
+      const numericId = parseInt(id);
+      products = products.filter(p => p.id !== numericId);
       repo.saveAll(products);
       this.loadProducts();
+    }
+  }
+
+  // Fix decimal IDs in existing products
+  fixDecimalIds() {
+    const repo = window.App.Repositories.ProductRepository;
+    let needsUpdate = false;
+    
+    products.forEach(product => {
+      // Check if ID is decimal (not an integer)
+      if (product.id !== Math.floor(product.id)) {
+        console.log(`Fixing decimal ID: ${product.id} -> ${Math.floor(product.id)} for product: ${product.name}`);
+        product.id = Math.floor(product.id);
+        needsUpdate = true;
+      }
+    });
+    
+    // Save updated products if any changes were made
+    if (needsUpdate) {
+      repo.saveAll(products);
+      console.log('Fixed decimal IDs in products database');
+    }
+  }
+
+  // Refresh products display when settings change
+  // Only refresh if the changes affect existing product calculations
+  refreshProductsAfterSettingsChange(changedCategories = []) {
+    console.log('🔄 Checking if products need refresh after settings change...');
+    console.log('📝 Changed categories:', changedCategories);
+    
+    // Categories that affect existing product costs:
+    const affectingCategories = [
+      'עמלות', // Fees (VAT, clearing fee, fixed expenses fee)
+      'קבועי תמחור תכשיטים', // Jewelry pricing constants
+      'חומרים – עלויות ועבודה' // Materials and labor (material prices, labor hour rate)
+    ];
+    
+    console.log('🎯 Categories that affect products:', affectingCategories);
+    
+    // Check if any of the changed categories affect product calculations
+    const shouldRefresh = changedCategories.length === 0 || // If no specific categories provided, refresh anyway
+                         changedCategories.some(category => {
+                           const affects = affectingCategories.includes(category);
+                           console.log(`📊 Category "${category}" affects products: ${affects}`);
+                           return affects;
+                         });
+    
+    console.log(`🚀 Should refresh products: ${shouldRefresh}`);
+    
+    if (shouldRefresh) {
+      console.log('✅ Refreshing products display - changes affect product calculations');
+      this.loadProducts();
+    } else {
+      console.log('⏭️ Skipping products refresh - changes do not affect existing products');
     }
   }
 }
 
 window.App.Managers.productManager = new ProductManager();
+
+// Global function to refresh products when settings change
+window.refreshProductsAfterSettingsChange = function(changedCategories = []) {
+  if (window.App && window.App.Managers && window.App.Managers.productManager) {
+    window.App.Managers.productManager.refreshProductsAfterSettingsChange(changedCategories);
+  }
+};

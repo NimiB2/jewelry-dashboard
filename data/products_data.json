@@ -1,0 +1,9 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "description": "Product data for JewelryDashboard bulk import",
+    "totalProducts": 103,
+    "lastUpdated": "2025-09-23"
+  },
+  "products": "PLACEHOLDER_FOR_PRODUCTS_ARRAY"
+}
