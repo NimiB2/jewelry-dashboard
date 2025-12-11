@@ -798,20 +798,20 @@ class OrderManager {
     try {
       console.log('🗑️ Deleting income for order:', order.id, order.number);
       
-      // Get all expenses from API
-      const response = await fetch('/api/expenses');
+      // Get all income from API (separate collection)
+      const response = await fetch('/api/income');
       if (!response.ok) return;
       
-      const expenses = await response.json();
+      const incomeList = await response.json();
       
       // Find income entry for this order by orderId (most reliable)
-      const incomeEntry = expenses.find(e => e.orderId === order.id);
+      const incomeEntry = incomeList.find(e => e.orderId === order.id);
       
       if (incomeEntry) {
         console.log('🔍 Found income entry to delete:', incomeEntry.id, incomeEntry.description);
         
         // Delete via API
-        const deleteResponse = await fetch(`/api/expenses/${incomeEntry.id}`, {
+        const deleteResponse = await fetch(`/api/income/${incomeEntry.id}`, {
           method: 'DELETE'
         });
         
@@ -819,9 +819,9 @@ class OrderManager {
           console.log('✅ Income entry deleted for order:', order.number || order.id);
           
           // Also update localStorage
-          const localExpenses = JSON.parse(localStorage.getItem('expenses') || '[]');
-          const filtered = localExpenses.filter(e => e.id !== incomeEntry.id);
-          localStorage.setItem('expenses', JSON.stringify(filtered));
+          const localIncome = JSON.parse(localStorage.getItem('income') || '[]');
+          const filtered = localIncome.filter(e => e.id !== incomeEntry.id);
+          localStorage.setItem('income', JSON.stringify(filtered));
         } else {
           console.error('❌ Failed to delete income:', deleteResponse.status);
         }
@@ -1126,8 +1126,7 @@ class OrderManager {
       order.isCompleted = true;
       order.completedDate = new Date().toISOString().split('T')[0]; // Today's date
       
-      // Add to income when order is completed
-      await this.addOrderToIncome(order);
+      // Note: Income is already added when status changes to "paid_preparing"
       
       const repo = window.App.Repositories.OrderRepository;
       // Ensure latest state
@@ -1160,9 +1159,9 @@ class OrderManager {
     }
   }
 
-  loadCompletedOrders() {
+  async loadCompletedOrders() {
     const repo = window.App.Repositories.OrderRepository;
-    orders = repo.getAll();
+    orders = await repo.getAll();
     
     const completedOrders = orders.filter(o => o.isCompleted);
     const tbody = document.getElementById('completedOrdersTable').querySelector('tbody');
@@ -1336,8 +1335,8 @@ class OrderManager {
       
       console.log('📝 Creating income entry:', incomeEntry);
 
-      // Direct API call to add income
-      const response = await fetch('/api/expenses', {
+      // Use income API (separate collection)
+      const response = await fetch('/api/income', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(incomeEntry)
@@ -1348,9 +1347,9 @@ class OrderManager {
         console.log('✅ Income added for order #' + orderNumber, result);
         
         // Also update localStorage
-        const localExpenses = JSON.parse(localStorage.getItem('expenses') || '[]');
-        localExpenses.push(incomeEntry);
-        localStorage.setItem('expenses', JSON.stringify(localExpenses));
+        const localIncome = JSON.parse(localStorage.getItem('income') || '[]');
+        localIncome.push(incomeEntry);
+        localStorage.setItem('income', JSON.stringify(localIncome));
       } else {
         console.error('❌ Failed to add income:', response.status, await response.text());
       }

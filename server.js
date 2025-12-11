@@ -9,6 +9,7 @@ const { connectToDatabase } = require('./config/database');
 const productsRouter = require('./api/routes/products');
 const ordersRouter = require('./api/routes/orders');
 const expensesRouter = require('./api/routes/expenses');
+const incomeRouter = require('./api/routes/income');
 const settingsRouter = require('./api/routes/settings');
 const { isAuthenticated, login } = require('./middleware/auth');
 
@@ -37,12 +38,14 @@ if (useAuth) {
     app.use('/api/products', isAuthenticated, productsRouter);
     app.use('/api/orders', isAuthenticated, ordersRouter);
     app.use('/api/expenses', isAuthenticated, expensesRouter);
+    app.use('/api/income', isAuthenticated, incomeRouter);
     app.use('/api/settings', isAuthenticated, settingsRouter);
 } else {
     console.log('⚠️  Authentication disabled');
     app.use('/api/products', productsRouter);
     app.use('/api/orders', ordersRouter);
     app.use('/api/expenses', expensesRouter);
+    app.use('/api/income', incomeRouter);
     app.use('/api/settings', settingsRouter);
 }
 

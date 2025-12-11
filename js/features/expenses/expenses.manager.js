@@ -10,19 +10,23 @@ class ExpenseManager {
     console.log('🔄 addExpense called');
     
     try {
-      const repo = window.App.Repositories.ExpenseRepository;
-      if (!repo) {
-        console.error('❌ ExpenseRepository not found!');
-        alert('שגיאה: מאגר הנתונים לא נמצא');
-        return;
-      }
+      const expenseRepo = window.App.Repositories.ExpenseRepository;
+      const incomeRepo = window.App.Repositories.IncomeRepository;
       
       const expenseType = document.getElementById('expenseType').value;
       const isExpense = expenseType === 'expense';
       const subtypeSelect = document.getElementById('expenseSubtype');
       const categorySelect = document.getElementById('expenseCategory');
       
-      const newExpense = {
+      // Choose the correct repository based on type
+      const repo = isExpense ? expenseRepo : incomeRepo;
+      if (!repo) {
+        console.error('❌ Repository not found for type:', expenseType);
+        alert('שגיאה: מאגר הנתונים לא נמצא');
+        return;
+      }
+      
+      const newEntry = {
         id: Date.now(),
         date: document.getElementById('expenseDate').value,
         type: expenseType,
@@ -36,28 +40,28 @@ class ExpenseManager {
         createdAt: new Date().toISOString()
       };
       
-      console.log('📝 New expense data:', newExpense);
+      console.log('📝 New entry data:', newEntry);
       
-      if (newExpense.type === 'income') {
+      if (newEntry.type === 'income') {
         const workHours = parseFloat(document.getElementById('expenseWorkHours').value) || 0;
-        newExpense.workHours = workHours;
+        newEntry.workHours = workHours;
       }
       
-      if (newExpense.type === 'expense' && newExpense.recurring) {
-        newExpense.recurringMonths = parseInt(document.getElementById('recurringMonthsCount').value) || 1;
-        newExpense.recurrenceGroupId = newExpense.id;
+      if (newEntry.type === 'expense' && newEntry.recurring) {
+        newEntry.recurringMonths = parseInt(document.getElementById('recurringMonthsCount').value) || 1;
+        newEntry.recurrenceGroupId = newEntry.id;
         // For recurring expenses, need to add multiple entries
-        await this.addRecurringExpenseToFutureMonths(newExpense);
+        await this.addRecurringExpenseToFutureMonths(newEntry);
       } else {
-        // Add single expense directly to MongoDB
-        const result = await repo.add(newExpense);
-        console.log('✅ Expense added to MongoDB:', newExpense.type, newExpense.amount, 'Result:', result);
+        // Add single entry to the correct collection
+        const result = await repo.add(newEntry);
+        console.log('✅ Entry added:', newEntry.type, newEntry.amount);
       }
       
       closeModal('addExpenseModal');
       await this.loadExpenseData();
     } catch (error) {
-      console.error('❌ Error adding expense:', error);
+      console.error('❌ Error adding entry:', error);
       alert('שגיאה בהוספת רשומה: ' + error.message);
     }
   }
@@ -177,11 +181,18 @@ class ExpenseManager {
       const n = parseFloat(id);
       id = isNaN(n) ? id : n;
     }
-    // Always work on latest data (await async call)
-    const repo = window.App.Repositories.ExpenseRepository;
-    expenses = (await repo.getAll() || []).filter(e => e && typeof e === 'object');
+    // Load from both repositories to find the item
+    const expenseRepo = window.App.Repositories.ExpenseRepository;
+    const incomeRepo = window.App.Repositories.IncomeRepository;
+    const expenseData = await expenseRepo.getAll() || [];
+    const incomeData = await incomeRepo.getAll() || [];
+    expenses = [...expenseData, ...incomeData].filter(e => e && typeof e === 'object');
+    
     const exp = expenses.find(e => e.id === id);
-    if (!exp) return;
+    if (!exp) {
+      console.error('[Expense] Entry not found for edit:', id);
+      return;
+    }
     
     const isExpense = exp.type === 'expense';
     const isRecurringOccurrence = isExpense && (exp.recurring || exp.recurrenceGroupId);
@@ -195,6 +206,12 @@ class ExpenseManager {
     document.getElementById('editExpenseDescription').value = exp.description || '';
     document.getElementById('editExpenseAmount').value = exp.amount;
     document.getElementById('editExpenseWorkHours').value = exp.workHours || '';
+    
+    // Disable type change - can't convert income to expense or vice versa
+    const typeSelect = document.getElementById('editExpenseType');
+    if (typeSelect) {
+      typeSelect.disabled = true;
+    }
     
     // Set subtype for expenses (fixed/variable)
     const subtypeSelect = document.getElementById('editExpenseSubtype');
@@ -258,14 +275,19 @@ class ExpenseManager {
       }
       console.log('[Expense] Form validation passed');
     }
-    const repo = window.App.Repositories.ExpenseRepository;
-    // Ensure latest state (await async call)
-    expenses = (await repo.getAll() || []).filter(x => x && typeof x === 'object');
+    const expenseRepo = window.App.Repositories.ExpenseRepository;
+    const incomeRepo = window.App.Repositories.IncomeRepository;
+    
+    // Load from both repositories to find the item
+    const expenseData = await expenseRepo.getAll() || [];
+    const incomeData = await incomeRepo.getAll() || [];
+    expenses = [...expenseData, ...incomeData].filter(x => x && typeof x === 'object');
+    
     const id = parseFloat(document.getElementById('editExpenseId').value);
-    console.log('[Expense] Looking for expense with id:', id);
+    console.log('[Expense] Looking for entry with id:', id);
     const index = expenses.findIndex(exp => exp.id === id);
     if (index === -1) {
-      console.error('[Expense] Expense not found in array', { id, expensesCount: expenses.length });
+      console.error('[Expense] Entry not found in array', { id, expensesCount: expenses.length });
       return;
     }
     console.log('[Expense] Found expense at index:', index);
@@ -325,33 +347,35 @@ class ExpenseManager {
     expenses[index] = edited;
     console.log('[Expense] saveEditedExpense', { originalExpense, edited, editScope });
     
+    // Use the correct repository based on type (type can't change during edit)
+    const repo = originalExpense.type === 'expense' ? expenseRepo : incomeRepo;
+    
     const origGroup = originalExpense.recurrenceGroupId || originalExpense.id;
     const wasRecurring = originalExpense.type === 'expense' && (originalExpense.recurring || originalExpense.recurrenceGroupId);
-    const changedToIncome = originalExpense.type === 'expense' && expenseType === 'income';
     const turnedOffRecurring = originalExpense.type === 'expense' && originalExpense.recurring && !isRecurring;
     
     try {
-      if (changedToIncome || turnedOffRecurring) {
-        console.log('[Expense] Converting to income or turning off recurring');
+      if (turnedOffRecurring) {
+        console.log('[Expense] Turning off recurring');
         // Remove old recurring group and add the single edited expense
-        await repo.removeGroup(origGroup);
-        await repo.add(edited);
-        console.log('✅ Expense converted and saved to MongoDB');
+        await expenseRepo.removeGroup(origGroup);
+        await expenseRepo.add(edited);
+        console.log('✅ Expense converted and saved');
       } else if (isExpense && isRecurring && editScope === 'all') {
         console.log('[Expense] Editing ALL recurring occurrences');
         // Rebuild the entire recurring group with new values
         edited.recurrenceGroupId = edited.recurrenceGroupId || origGroup;
         await this.addRecurringExpenseToFutureMonths(edited);
-        console.log('✅ All recurring expenses updated in MongoDB');
+        console.log('✅ All recurring expenses updated');
       } else if (isExpense && wasRecurring && editScope === 'single') {
         console.log('[Expense] Editing ONLY this occurrence');
         // Just update this single occurrence, keep recurrence group intact
-        await repo.update(edited);
-        console.log('✅ Single occurrence updated in MongoDB');
+        await expenseRepo.update(edited);
+        console.log('✅ Single occurrence updated');
       } else {
-        // Simple update - just update the single expense
+        // Simple update - use correct repo based on type
         await repo.update(edited);
-        console.log('✅ Expense updated in MongoDB');
+        console.log('✅ Entry updated');
       }
     } catch (err) {
       console.error('[Expense] saveEditedExpense error saving', err);
@@ -370,9 +394,14 @@ class ExpenseManager {
   }
 
   async deleteExpense(id) {
-    const repo = window.App.Repositories.ExpenseRepository;
-    // Ensure latest state (await async call)
-    expenses = (await repo.getAll() || []).filter(x => x && typeof x === 'object');
+    const expenseRepo = window.App.Repositories.ExpenseRepository;
+    const incomeRepo = window.App.Repositories.IncomeRepository;
+    
+    // Load from both repositories to find the item
+    const expenseData = await expenseRepo.getAll() || [];
+    const incomeData = await incomeRepo.getAll() || [];
+    expenses = [...expenseData, ...incomeData].filter(x => x && typeof x === 'object');
+    
     // Coerce id from string if needed
     if (typeof id === 'string') {
       const n = parseFloat(id);
@@ -383,7 +412,10 @@ class ExpenseManager {
       console.warn('[Expense] deleteExpense: item not found', { id });
       return;
     }
-    console.log('[Expense] deleteExpense', { id, exp });
+    
+    // Choose the correct repository based on type
+    const repo = exp.type === 'expense' ? expenseRepo : incomeRepo;
+    console.log('[Expense] deleteExpense', { id, exp, repoType: exp.type });
     
     // First confirmation for all deletions
     const typeText = exp.type === 'income' ? 'הכנסה' : 'הוצאה';
@@ -392,33 +424,36 @@ class ExpenseManager {
     
     if (exp.type === 'expense' && (exp.recurring || exp.recurrenceGroupId)) {
       const groupId = exp.recurrenceGroupId || exp.id;
-      const groupEntries = expenses.filter(e => e && ((e.recurrenceGroupId || e.id) === groupId));
+      const groupEntries = expenseData.filter(e => e && ((e.recurrenceGroupId || e.id) === groupId));
       if (groupEntries.length > 1) {
         // Custom dialog for recurring expenses with better button text
         const deleteAll = confirm('רשומה זו היא חלק מהוצאה חוזרת.\n\nלחץ OK למחוק את כל ההוצאות החוזרות\nלחץ Cancel למחוק רק הוצאה זו');
         if (deleteAll) {
-          await repo.removeGroup(groupId);
-          expenses = expenses.filter(e => e && ((e.recurrenceGroupId || e.id) !== groupId));
+          await expenseRepo.removeGroup(groupId);
         } else {
-          await repo.removeById(id);
-          expenses = expenses.filter(e => e && !(e.id === id || String(e.id) === String(id)));
+          await expenseRepo.removeById(id);
         }
       } else {
-        await repo.removeById(id);
-        expenses = expenses.filter(e => e && !(e.id === id || String(e.id) === String(id)));
+        await expenseRepo.removeById(id);
       }
     } else {
       await repo.removeById(id);
-      expenses = expenses.filter(e => e && !(e.id === id || String(e.id) === String(id)));
     }
     console.log('✅ Expense deleted:', id);
     await this.loadExpenseData();
   }
 
   async loadExpenseData() {
-    const repo = window.App.Repositories.ExpenseRepository;
-    // Ensure latest state (await async call)
-    expenses = await repo.getAll();
+    const expenseRepo = window.App.Repositories.ExpenseRepository;
+    const incomeRepo = window.App.Repositories.IncomeRepository;
+    
+    // Load from both repositories and combine
+    const expenseData = await expenseRepo.getAll() || [];
+    const incomeData = await incomeRepo.getAll() || [];
+    
+    // Combine both into expenses array for display
+    expenses = [...expenseData, ...incomeData].filter(e => e && typeof e === 'object');
+    
     const yearEl = document.getElementById('expenseYear');
     const monthEl = document.getElementById('expenseMonth');
     const now = new Date();
