@@ -5,11 +5,11 @@ window.App = window.App || {};
 window.App.Managers = window.App.Managers || {};
 
 class ExpenseManager {
-  addExpense(e) {
+  async addExpense(e) {
     e.preventDefault();
     const repo = window.App.Repositories.ExpenseRepository;
-    // Ensure latest state
-    expenses = repo.getAll();
+    // Ensure latest state (await async call)
+    expenses = await repo.getAll();
     // Sanitize possible null/invalid entries from previous data
     expenses = (expenses || []).filter(e => e && typeof e === 'object');
     const expenseType = document.getElementById('expenseType').value;
@@ -20,7 +20,8 @@ class ExpenseManager {
       category: document.getElementById('expenseCategory').value,
       description: document.getElementById('expenseDescription').value,
       amount: parseFloat(document.getElementById('expenseAmount').value),
-      recurring: expenseType === 'expense' ? document.getElementById('isRecurring').checked : false
+      recurring: expenseType === 'expense' ? document.getElementById('isRecurring').checked : false,
+      createdAt: new Date().toISOString()
     };
     if (newExpense.type === 'income') {
       const workHours = parseFloat(document.getElementById('expenseWorkHours').value) || 0;
@@ -33,9 +34,10 @@ class ExpenseManager {
     } else {
       expenses.push(newExpense);
     }
-    repo.saveAll(expenses);
+    await repo.saveAll(expenses);
+    console.log('✅ Expense added:', newExpense.type, newExpense.amount);
     closeModal('addExpenseModal');
-    this.loadExpenseData();
+    await this.loadExpenseData();
   }
 
   toggleWorkHoursField() {
@@ -114,15 +116,15 @@ class ExpenseManager {
     openModal('addExpenseModal');
   }
 
-  showEditExpenseModal(id) {
+  async showEditExpenseModal(id) {
     // Coerce id to number in case it came as a quoted string from HTML
     if (typeof id === 'string') {
       const n = parseFloat(id);
       id = isNaN(n) ? id : n;
     }
-    // Always work on latest data
+    // Always work on latest data (await async call)
     const repo = window.App.Repositories.ExpenseRepository;
-    expenses = (repo.getAll() || []).filter(e => e && typeof e === 'object');
+    expenses = (await repo.getAll() || []).filter(e => e && typeof e === 'object');
     const exp = expenses.find(e => e.id === id);
     if (!exp) return;
     console.log('[Expense] showEditExpenseModal', { id, exp, isRecurringOccurrence: exp.type === 'expense' && (exp.recurring || exp.recurrenceGroupId) });
@@ -187,7 +189,7 @@ class ExpenseManager {
     openModal('editExpenseModal');
   }
 
-  saveEditedExpense(e) {
+  async saveEditedExpense(e) {
     console.log('[Expense] saveEditedExpense CALLED - form submitted');
     e.preventDefault();
     const form = document.getElementById('editExpenseForm');
@@ -201,8 +203,8 @@ class ExpenseManager {
       console.log('[Expense] Form validation passed');
     }
     const repo = window.App.Repositories.ExpenseRepository;
-    // Ensure latest state
-    expenses = (repo.getAll() || []).filter(x => x && typeof x === 'object');
+    // Ensure latest state (await async call)
+    expenses = (await repo.getAll() || []).filter(x => x && typeof x === 'object');
     const id = parseFloat(document.getElementById('editExpenseId').value);
     console.log('[Expense] Looking for expense with id:', id);
     const index = expenses.findIndex(exp => exp.id === id);
@@ -269,8 +271,8 @@ class ExpenseManager {
       this.addRecurringExpenseToFutureMonths(edited);
     }
     try {
-      repo.saveAll(expenses);
-      console.log('[Expense] Successfully saved to repository');
+      await repo.saveAll(expenses);
+      console.log('✅ Expense saved to repository');
     } catch (err) {
       console.error('[Expense] saveEditedExpense error saving', err);
       alert('שגיאה בשמירת העדכון. רענן ונסה שוב.');
@@ -284,13 +286,13 @@ class ExpenseManager {
       const y = new Date(edited.date).getFullYear();
       yearSelect.value = String(y);
     }
-    this.loadExpenseData();
+    await this.loadExpenseData();
   }
 
-  deleteExpense(id) {
+  async deleteExpense(id) {
     const repo = window.App.Repositories.ExpenseRepository;
-    // Ensure latest state
-    expenses = (repo.getAll() || []).filter(x => x && typeof x === 'object');
+    // Ensure latest state (await async call)
+    expenses = (await repo.getAll() || []).filter(x => x && typeof x === 'object');
     // Coerce id from string if needed
     if (typeof id === 'string') {
       const n = parseFloat(id);
@@ -315,29 +317,28 @@ class ExpenseManager {
         // Custom dialog for recurring expenses with better button text
         const deleteAll = confirm('רשומה זו היא חלק מהוצאה חוזרת.\n\nלחץ OK למחוק את כל ההוצאות החוזרות\nלחץ Cancel למחוק רק הוצאה זו');
         if (deleteAll) {
+          await repo.removeGroup(groupId);
           expenses = expenses.filter(e => e && ((e.recurrenceGroupId || e.id) !== groupId));
         } else {
+          await repo.removeById(id);
           expenses = expenses.filter(e => e && !(e.id === id || String(e.id) === String(id)));
         }
       } else {
+        await repo.removeById(id);
         expenses = expenses.filter(e => e && !(e.id === id || String(e.id) === String(id)));
       }
     } else {
+      await repo.removeById(id);
       expenses = expenses.filter(e => e && !(e.id === id || String(e.id) === String(id)));
     }
-    try {
-      repo.saveAll(expenses);
-    } catch (err) {
-      console.error('[Expense] deleteExpense error saving', err);
-      alert('שגיאה במחיקה. רענן ונסה שוב.');
-    }
-    this.loadExpenseData();
+    console.log('✅ Expense deleted:', id);
+    await this.loadExpenseData();
   }
 
-  loadExpenseData() {
+  async loadExpenseData() {
     const repo = window.App.Repositories.ExpenseRepository;
-    // Ensure latest state
-    expenses = repo.getAll();
+    // Ensure latest state (await async call)
+    expenses = await repo.getAll();
     const yearEl = document.getElementById('expenseYear');
     const monthEl = document.getElementById('expenseMonth');
     const now = new Date();

@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>העברת נתונים ל-MongoDB</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+        
+        .status-box {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .status-item:last-child {
+            border-bottom: none;
+        }
+        
+        .status-label {
+            font-weight: 600;
+            color: #555;
+        }
+        
+        .status-value {
+            font-weight: bold;
+            padding: 5px 15px;
+            border-radius: 20px;
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 30px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            margin-top: 20px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .log {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .log-entry {
+            margin-bottom: 5px;
+        }
+        
+        .log-success {
+            color: #4caf50;
+        }
+        
+        .log-error {
+            color: #f44336;
+        }
+        
+        .log-info {
+            color: #2196f3;
+        }
+        
+        .log-warning {
+            color: #ff9800;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .alert-info {
+            background: #e3f2fd;
+            color: #1976d2;
+            border-right: 4px solid #1976d2;
+        }
+        
+        .alert-success {
+            background: #e8f5e9;
+            color: #388e3c;
+            border-right: 4px solid #388e3c;
+        }
+        
+        .alert-error {
+            background: #ffebee;
+            color: #c62828;
+            border-right: 4px solid #c62828;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 העברת נתונים ל-MongoDB</h1>
+        <p class="subtitle">כלי להעברת הנתונים מ-localStorage למסד הנתונים</p>
+        
+        <div id="alertBox"></div>
+        
+        <div class="status-box">
+            <div class="status-item">
+                <span class="status-label">📦 מוצרים ב-localStorage:</span>
+                <span class="status-value" id="productsCount">0</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">📋 הזמנות ב-localStorage:</span>
+                <span class="status-value" id="ordersCount">0</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">💰 הוצאות ב-localStorage:</span>
+                <span class="status-value" id="expensesCount">0</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">🔌 חיבור MongoDB:</span>
+                <span class="status-value" id="mongoStatus">בודק...</span>
+            </div>
+        </div>
+        
+        <button class="btn" id="migrateBtn" onclick="migrate()">
+            🚀 התחל העברה
+        </button>
+        
+        <div class="log" id="log"></div>
+    </div>
+    
+    <script>
+        let logEntries = [];
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString('he-IL');
+            const entry = `[${timestamp}] ${message}`;
+            logEntries.push({ entry, type });
+            
+            const logDiv = document.getElementById('log');
+            const entryDiv = document.createElement('div');
+            entryDiv.className = `log-entry log-${type}`;
+            entryDiv.textContent = entry;
+            logDiv.appendChild(entryDiv);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function showAlert(message, type = 'info') {
+            const alertBox = document.getElementById('alertBox');
+            alertBox.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+        }
+        
+        function getLocalStorageData(key) {
+            try {
+                return JSON.parse(localStorage.getItem(key) || '[]');
+            } catch {
+                return [];
+            }
+        }
+        
+        async function checkMongoConnection() {
+            try {
+                const response = await fetch('/api/health');
+                const data = await response.json();
+                
+                const statusEl = document.getElementById('mongoStatus');
+                if (data.mongodb === 'connected') {
+                    statusEl.textContent = '✅ מחובר';
+                    statusEl.style.background = '#c8e6c9';
+                    statusEl.style.color = '#2e7d32';
+                    return true;
+                } else {
+                    statusEl.textContent = '❌ לא מחובר';
+                    statusEl.style.background = '#ffcdd2';
+                    statusEl.style.color = '#c62828';
+                    return false;
+                }
+            } catch (error) {
+                const statusEl = document.getElementById('mongoStatus');
+                statusEl.textContent = '❌ שגיאה';
+                statusEl.style.background = '#ffcdd2';
+                statusEl.style.color = '#c62828';
+                return false;
+            }
+        }
+        
+        async function migrate() {
+            const btn = document.getElementById('migrateBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ מעביר נתונים...';
+            
+            logEntries = [];
+            document.getElementById('log').innerHTML = '';
+            showAlert('', 'info');
+            
+            log('🚀 מתחיל תהליך העברה...', 'info');
+            
+            // Check MongoDB connection
+            log('🔌 בודק חיבור ל-MongoDB...', 'info');
+            const isConnected = await checkMongoConnection();
+            
+            if (!isConnected) {
+                log('❌ אין חיבור ל-MongoDB. ודא שהשרת פועל ושקיים קובץ .env עם MONGODB_URI', 'error');
+                showAlert('❌ שגיאה: אין חיבור ל-MongoDB. בדוק את הגדרות החיבור.', 'error');
+                btn.disabled = false;
+                btn.textContent = '🚀 התחל העברה';
+                return;
+            }
+            
+            log('✅ חיבור ל-MongoDB תקין', 'success');
+            
+            // Get data from localStorage
+            const products = getLocalStorageData('products');
+            const orders = getLocalStorageData('orders');
+            const expenses = getLocalStorageData('expenses');
+            
+            log(`📦 נמצאו ${products.length} מוצרים`, 'info');
+            log(`📋 נמצאו ${orders.length} הזמנות`, 'info');
+            log(`💰 נמצאו ${expenses.length} הוצאות`, 'info');
+            
+            let successCount = 0;
+            let errorCount = 0;
+            
+            // Migrate products
+            if (products.length > 0) {
+                try {
+                    log('📦 מעביר מוצרים...', 'info');
+                    const response = await fetch('/api/products/bulk', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(products)
+                    });
+                    
+                    if (response.ok) {
+                        log(`✅ ${products.length} מוצרים הועברו בהצלחה`, 'success');
+                        successCount++;
+                    } else {
+                        throw new Error('Failed to migrate products');
+                    }
+                } catch (error) {
+                    log(`❌ שגיאה בהעברת מוצרים: ${error.message}`, 'error');
+                    errorCount++;
+                }
+            }
+            
+            // Migrate orders
+            if (orders.length > 0) {
+                try {
+                    log('📋 מעביר הזמנות...', 'info');
+                    const response = await fetch('/api/orders/bulk', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(orders)
+                    });
+                    
+                    if (response.ok) {
+                        log(`✅ ${orders.length} הזמנות הועברו בהצלחה`, 'success');
+                        successCount++;
+                    } else {
+                        throw new Error('Failed to migrate orders');
+                    }
+                } catch (error) {
+                    log(`❌ שגיאה בהעברת הזמנות: ${error.message}`, 'error');
+                    errorCount++;
+                }
+            }
+            
+            // Migrate expenses
+            if (expenses.length > 0) {
+                try {
+                    log('💰 מעביר הוצאות...', 'info');
+                    const response = await fetch('/api/expenses/bulk', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(expenses)
+                    });
+                    
+                    if (response.ok) {
+                        log(`✅ ${expenses.length} הוצאות הועברו בהצלחה`, 'success');
+                        successCount++;
+                    } else {
+                        throw new Error('Failed to migrate expenses');
+                    }
+                } catch (error) {
+                    log(`❌ שגיאה בהעברת הוצאות: ${error.message}`, 'error');
+                    errorCount++;
+                }
+            }
+            
+            // Summary
+            log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+            if (errorCount === 0) {
+                log('🎉 ההעברה הושלמה בהצלחה!', 'success');
+                showAlert('✅ כל הנתונים הועברו בהצלחה ל-MongoDB!', 'success');
+            } else {
+                log(`⚠️  ההעברה הושלמה עם ${errorCount} שגיאות`, 'warning');
+                showAlert(`⚠️ ההעברה הושלמה עם ${errorCount} שגיאות. בדוק את הלוג לפרטים.`, 'error');
+            }
+            
+            btn.disabled = false;
+            btn.textContent = '🔄 העבר שוב';
+        }
+        
+        // Initialize
+        window.addEventListener('DOMContentLoaded', async () => {
+            const products = getLocalStorageData('products');
+            const orders = getLocalStorageData('orders');
+            const expenses = getLocalStorageData('expenses');
+            
+            document.getElementById('productsCount').textContent = products.length;
+            document.getElementById('ordersCount').textContent = orders.length;
+            document.getElementById('expensesCount').textContent = expenses.length;
+            
+            await checkMongoConnection();
+            
+            if (products.length === 0 && orders.length === 0 && expenses.length === 0) {
+                showAlert('ℹ️ לא נמצאו נתונים ב-localStorage להעברה.', 'info');
+                document.getElementById('migrateBtn').disabled = true;
+            }
+        });
+    </script>
+</body>
+</html>

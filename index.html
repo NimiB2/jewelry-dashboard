@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>מערכת ניהול עסקית מתקדמת</title>
     <link rel="stylesheet" href="css/styles.css">
+    <!-- Authentication check -->
+    <script src="public/auth-check.js"></script>
 </head>
 <body>
     <div class="container">
@@ -610,7 +612,7 @@
                 </div>
                 <div class="form-group">
                     <label>חומר:</label>
-                    <select id="editProductMaterial" required onchange="updateEditPricing()">
+                    <select id="editProductMaterial" required onchange="updateEditPricing(true)">
                         <option value="">בחר חומר</option>
                         <option value="כסף">כסף</option>
                         <option value="זהב 14K">זהב 14K</option>
@@ -621,7 +623,7 @@
                 </div>
                 <div class="form-group">
                     <label>משקל (גרם):</label>
-                    <input type="number" id="editProductWeight" step="0.1" onchange="updateEditPricing()">
+                    <input type="number" id="editProductWeight" step="0.1" onchange="updateEditPricing(true)">
                 </div>
                 <div class="form-group">
                     <label>קולקציות:</label>
@@ -642,7 +644,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" onclick="closeModal('editProductModal')" class="btn-secondary">ביטול</button>
-                    <button type="submit">עדכן מוצר</button>
+                    <button type="button" onclick="saveEditedProductClick()">עדכן מוצר</button>
                 </div>
             </form>
         </div>
@@ -713,7 +715,7 @@
                 
                 <div class="modal-footer">
                     <button type="button" onclick="closeModal('addOrderModal')" class="btn-secondary">ביטול</button>
-                    <button type="submit">הוסף הזמנה</button>
+                    <button type="button" onclick="addOrderClick()">הוסף הזמנה</button>
                 </div>
             </form>
         </div>
@@ -1447,5 +1449,7 @@
     </script>
     <!-- Bulk Product Import Script -->
     <script src="bulk_product_import.js"></script>
+    <!-- Direct MongoDB Import Script -->
+    <script src="data/import/import-to-mongodb.js"></script>
 </body>
 </html>

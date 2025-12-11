@@ -67,14 +67,14 @@ class OrderManager {
     }
   }
 
-  handleProductSearch(e) {
+  async handleProductSearch(e) {
     const query = e.target.value.trim();
     if (query.length < 1) {
       this.hideSuggestions();
       return;
     }
 
-    const availableProducts = this.getAvailableProducts();
+    const availableProducts = await this.getAvailableProducts();
     console.log('Searching in products:', availableProducts.length, 'Query:', query);
     
     const filtered = availableProducts.filter(product => {
@@ -92,18 +92,18 @@ class OrderManager {
     this.showSuggestions(filtered);
   }
 
-  getAvailableProducts() {
+  async getAvailableProducts() {
     // Try multiple sources for products
     let availableProducts = [];
     
-    // First try global products array
-    if (typeof products !== 'undefined' && Array.isArray(products)) {
+    // First try global products array (already loaded)
+    if (typeof products !== 'undefined' && Array.isArray(products) && products.length > 0) {
       availableProducts = products;
     }
-    // Then try repository
+    // Then try repository (async)
     else if (window.App?.Repositories?.ProductRepository) {
       const repo = window.App.Repositories.ProductRepository;
-      availableProducts = repo.getAll();
+      availableProducts = await repo.getAll();
     }
     // Finally try localStorage directly
     else {
@@ -155,10 +155,13 @@ class OrderManager {
     }
   }
 
-  selectProduct(productId) {
-    const products = this.getAvailableProducts();
+  async selectProduct(productId) {
+    const products = await this.getAvailableProducts();
     const product = products.find(p => p.id === productId);
-    if (!product) return;
+    if (!product) {
+      console.warn('Product not found:', productId);
+      return;
+    }
 
     // Check if already selected - if yes, increase quantity
     const existingProduct = this.selectedProducts.find(p => p.id === productId && !p.isManual);
@@ -185,6 +188,7 @@ class OrderManager {
       searchInput.value = '';
     }
     this.hideSuggestions();
+    console.log('✅ Product added to order:', product.name);
   }
 
   addManualProduct() {
@@ -312,10 +316,10 @@ class OrderManager {
       }
     }
   }
-  loadOrders() {
+  async loadOrders() {
     const repo = window.App.Repositories.OrderRepository;
-    // Ensure latest state
-    orders = repo.getAll();
+    // Ensure latest state (await async call)
+    orders = await repo.getAll();
     const month = document.getElementById('orderMonth').value;
     const filteredOrders = orders.filter(o => {
       const orderDate = new Date(o.date);
@@ -527,7 +531,7 @@ class OrderManager {
     }
   }
 
-  saveEditedOrder(e) {
+  async saveEditedOrder(e) {
     e.preventDefault();
     
     if (!this.editingOrderId) return false;
@@ -539,8 +543,8 @@ class OrderManager {
     }
 
     const repo = window.App.Repositories.OrderRepository;
-    // Ensure latest state
-    orders = repo.getAll();
+    // Ensure latest state (await async call)
+    orders = await repo.getAll();
     
     const orderIndex = orders.findIndex(o => o.id === this.editingOrderId);
     if (orderIndex === -1) return false;
@@ -561,7 +565,7 @@ class OrderManager {
     ).join(', ');
     
     // Update the order
-    orders[orderIndex] = {
+    const updatedOrder = {
       ...orders[orderIndex],
       date: document.getElementById('editOrderDate').value,
       customer: document.getElementById('editCustomerName').value,
@@ -572,12 +576,19 @@ class OrderManager {
       hasDiscount: hasDiscount,
       discountReason: hasDiscount ? document.getElementById('editDiscountReason').value : '',
       receiptSent: document.getElementById('editReceiptSent').checked,
-      notes: document.getElementById('editOrderNotes').value
+      notes: document.getElementById('editOrderNotes').value,
+      updatedAt: new Date().toISOString()
     };
     
-    repo.saveAll(orders);
+    orders[orderIndex] = updatedOrder;
+    await repo.update(updatedOrder);
+    console.log('✅ Order updated:', updatedOrder.number);
+    
+    // Update income entry if exists
+    await this.updateOrderIncome(updatedOrder);
+    
     closeModal('editOrderModal');
-    this.loadOrders();
+    await this.loadOrders();
     
     // Reset editing state
     this.editingOrderId = null;
@@ -586,8 +597,14 @@ class OrderManager {
     return false; // Prevent form submission
   }
 
-  addOrder(e) {
-    e.preventDefault();
+  async addOrder(e) {
+    if (e) e.preventDefault();
+    await this.addOrderDirect();
+  }
+  
+  // Direct add without event (called from button click)
+  async addOrderDirect() {
+    console.log('🔄 addOrderDirect called');
     
     // Validate that products are selected
     if (this.selectedProducts.length === 0) {
@@ -596,15 +613,15 @@ class OrderManager {
     }
 
     const repo = window.App.Repositories.OrderRepository;
-    // Ensure latest state
-    orders = repo.getAll();
+    // Ensure latest state (await async call)
+    orders = await repo.getAll();
     
     // Use repository-managed order numbering
     const existingNext = localStorage.getItem('nextOrderNumber');
     if (existingNext === null && typeof nextOrderNumber !== 'undefined' && Number.isFinite(parseInt(nextOrderNumber, 10))) {
-      repo.setNextOrderNumber(parseInt(nextOrderNumber, 10));
+      await repo.setNextOrderNumber(parseInt(nextOrderNumber, 10));
     }
-    const nextNo = repo.incrementAndGet();
+    const nextNo = await repo.incrementAndGet();
     nextOrderNumber = nextNo + 0; // keep global in sync
     
     // Calculate amounts
@@ -628,20 +645,41 @@ class OrderManager {
       date: document.getElementById('orderDate').value,
       customer: document.getElementById('customerName').value,
       products: productsString,
-      selectedProducts: this.selectedProducts, // Store detailed product info
+      selectedProducts: this.selectedProducts,
       amount: calculatedAmount,
       finalAmount: finalPaidAmount,
       hasDiscount: hasDiscount,
       discountReason: hasDiscount ? document.getElementById('discountReason').value : '',
       receiptSent: document.getElementById('receiptSent').checked,
       notes: document.getElementById('orderNotes').value,
-      status: 'new'
+      status: 'new',
+      createdAt: new Date().toISOString()
     };
     
-    orders.push(newOrder);
-    repo.saveAll(orders);
-    closeModal('addOrderModal');
-    this.loadOrders();
+    try {
+      // Use repo.add() for single order
+      await repo.add(newOrder);
+      orders.push(newOrder);
+      
+      console.log('✅ Order added:', newOrder.number);
+      
+      // Add to income immediately when order is created
+      await this.addOrderToIncome(newOrder);
+      
+      // Close modal
+      closeModal('addOrderModal');
+      
+      // Reload orders
+      await this.loadOrders();
+      
+      // Stay on orders tab
+      if (typeof switchTab === 'function') {
+        switchTab('orders');
+      }
+    } catch (err) {
+      console.error('❌ Failed to add order:', err);
+      alert('שגיאה בהוספת ההזמנה. אנא נסה שוב.');
+    }
   }
 
   showOrderDetails(orderId) {
@@ -733,21 +771,54 @@ class OrderManager {
     `);
   }
 
-  deleteOrder(id) {
+  async deleteOrder(id) {
     if (confirm('האם אתה בטוח שברצונך למחוק הזמנה זו?')) {
       const repo = window.App.Repositories.OrderRepository;
       // Ensure latest state
-      orders = repo.getAll();
+      orders = await repo.getAll();
+      
+      // Find order to get its number before deleting
+      const orderToDelete = orders.find(o => o.id === id);
+      
+      await repo.removeById(id);
       orders = orders.filter(o => o.id !== id);
-      repo.saveAll(orders);
-      this.loadOrders();
+      console.log('✅ Order deleted:', id);
+      
+      // Also delete from income
+      if (orderToDelete) {
+        await this.deleteOrderFromIncome(orderToDelete);
+      }
+      
+      await this.loadOrders();
+    }
+  }
+  
+  // Delete income entry when order is deleted
+  async deleteOrderFromIncome(order) {
+    try {
+      const expenseRepo = window.App?.Repositories?.ExpenseRepository;
+      if (!expenseRepo) return;
+      
+      let expenses = await expenseRepo.getAll();
+      
+      // Find income entry for this order
+      const incomeEntry = expenses.find(e => 
+        e.orderId === order.id || e.orderNumber === order.number
+      );
+      
+      if (incomeEntry) {
+        await expenseRepo.removeById(incomeEntry.id);
+        console.log('✅ Income entry deleted for order:', order.number || order.id);
+      }
+    } catch (error) {
+      console.error('Error deleting order from income:', error);
     }
   }
 
-  cycleOrderStatus(id) {
+  async cycleOrderStatus(id) {
     const repo = window.App.Repositories.OrderRepository;
     // Ensure latest state
-    orders = repo.getAll();
+    orders = await repo.getAll();
     const order = orders.find(o => o.id === id);
     
     const statuses = [
@@ -769,19 +840,19 @@ class OrderManager {
       
       // Note: Income is now added only when order is completed, not when paid
       
-      repo.saveAll(orders);
+      await repo.update(order);
       
       // Check if order is completed and mark as deleted
-      this.checkAndMarkCompletedOrder(order);
+      await this.checkAndMarkCompletedOrder(order);
       
-      this.loadOrders();
+      await this.loadOrders();
     }
   }
 
-  toggleReceiptStatus(id) {
+  async toggleReceiptStatus(id) {
     const repo = window.App.Repositories.OrderRepository;
     // Ensure latest state
-    orders = repo.getAll();
+    orders = await repo.getAll();
     const order = orders.find(o => o.id === id);
     
     const currentStatus = order.receiptSent ? 'נשלחה' : 'לא נשלחה';
@@ -789,12 +860,12 @@ class OrderManager {
     
     if (confirm(`האם לשנות את סטטוס הקבלה מ"${currentStatus}" ל"${newStatus}"?`)) {
       order.receiptSent = !order.receiptSent;
-      repo.saveAll(orders);
+      await repo.update(order);
       
       // Check if order is completed and mark as deleted
-      this.checkAndMarkCompletedOrder(order);
+      await this.checkAndMarkCompletedOrder(order);
       
-      this.loadOrders();
+      await this.loadOrders();
     }
   }
 
@@ -864,20 +935,34 @@ class OrderManager {
   }
 
   initializeEditOrderForm() {
+    console.log('🔧 initializeEditOrderForm called');
+    
     // Set up product search for edit form
     const searchInput = document.getElementById('editProductSearchInput');
+    console.log('🔍 Edit search input found:', !!searchInput);
+    
     if (searchInput) {
       // Remove existing event listeners by cloning the element
       const newSearchInput = searchInput.cloneNode(true);
       searchInput.parentNode.replaceChild(newSearchInput, searchInput);
       
       // Add new event listeners
-      newSearchInput.addEventListener('input', (e) => this.handleEditProductSearch(e));
-      newSearchInput.addEventListener('focus', (e) => this.handleEditProductSearch(e));
+      newSearchInput.addEventListener('input', (e) => {
+        console.log('📝 Edit input event:', e.target.value);
+        this.handleEditProductSearch(e);
+      });
+      newSearchInput.addEventListener('focus', (e) => {
+        console.log('🎯 Edit focus event');
+        if (e.target.value.trim().length > 0) {
+          this.handleEditProductSearch(e);
+        }
+      });
       newSearchInput.addEventListener('blur', () => {
         // Delay hiding suggestions to allow for clicks
-        setTimeout(() => this.hideEditSuggestions(), 150);
+        setTimeout(() => this.hideEditSuggestions(), 200);
       });
+      
+      console.log('✅ Edit search event listeners added');
     }
 
     // Set up add product button for edit form
@@ -889,14 +974,14 @@ class OrderManager {
     }
   }
 
-  handleEditProductSearch(e) {
+  async handleEditProductSearch(e) {
     const query = e.target.value.trim();
     if (query.length < 1) {
       this.hideEditSuggestions();
       return;
     }
 
-    const availableProducts = this.getAvailableProducts();
+    const availableProducts = await this.getAvailableProducts();
     console.log('Edit: Searching in products:', availableProducts.length, 'Query:', query);
     
     const filtered = availableProducts.filter(product => {
@@ -915,7 +1000,10 @@ class OrderManager {
   }
 
   showEditSuggestions(products) {
+    console.log('📋 showEditSuggestions called with', products.length, 'products');
     const suggestionsDiv = document.getElementById('editProductSuggestions');
+    console.log('📦 Edit suggestions div found:', !!suggestionsDiv);
+    
     if (!suggestionsDiv) return;
 
     if (products.length === 0) {
@@ -934,6 +1022,7 @@ class OrderManager {
     `).join('');
 
     suggestionsDiv.style.display = 'block';
+    console.log('✅ Edit suggestions displayed');
   }
 
   hideEditSuggestions() {
@@ -943,8 +1032,8 @@ class OrderManager {
     }
   }
 
-  selectEditProduct(productId) {
-    const availableProducts = this.getAvailableProducts();
+  async selectEditProduct(productId) {
+    const availableProducts = await this.getAvailableProducts();
     const product = availableProducts.find(p => p.id === productId);
     
     if (product) {
@@ -976,6 +1065,7 @@ class OrderManager {
       const searchInput = document.getElementById('editProductSearchInput');
       if (searchInput) searchInput.value = '';
       this.hideEditSuggestions();
+      console.log('✅ Product added to order (edit):', product.name);
     }
   }
 
@@ -1007,23 +1097,23 @@ class OrderManager {
     this.hideEditSuggestions();
   }
 
-  checkAndMarkCompletedOrder(order) {
+  async checkAndMarkCompletedOrder(order) {
     // Check if order is completed: status is "shipped" AND receipt is sent
     if (order.status === 'shipped' && order.receiptSent) {
       // Automatically complete the order without asking for confirmation
       order.isCompleted = true;
       order.completedDate = new Date().toISOString().split('T')[0]; // Today's date
       
-      // Add to income when order is completed (not when paid)
-      this.addOrderToIncome(order);
+      // Add to income when order is completed
+      await this.addOrderToIncome(order);
       
       const repo = window.App.Repositories.OrderRepository;
       // Ensure latest state
-      orders = repo.getAll();
+      orders = await repo.getAll();
       const orderIndex = orders.findIndex(o => o.id === order.id);
       if (orderIndex !== -1) {
         orders[orderIndex] = order;
-        repo.saveAll(orders);
+        await repo.update(order);
       }
       
       // Show completed orders automatically
@@ -1148,22 +1238,72 @@ class OrderManager {
     }
   }
 
-  addOrderToIncome(order) {
+  // Update income entry when order is updated
+  async updateOrderIncome(order) {
+    try {
+      const expenseRepo = window.App?.Repositories?.ExpenseRepository;
+      if (!expenseRepo) return;
+      
+      let expenses = await expenseRepo.getAll();
+      
+      // Find existing income entry for this order
+      const existingIndex = expenses.findIndex(e => 
+        e.orderId === order.id || e.orderNumber === order.number
+      );
+      
+      if (existingIndex === -1) {
+        console.log(`No income entry found for order #${order.number}`);
+        return;
+      }
+      
+      // Calculate work hours
+      const workHoursData = this.calculateWorkHours(order.selectedProducts || []);
+      const totalWorkHours = workHoursData.totalHours;
+      
+      // Create products description
+      const productsDescription = order.selectedProducts && order.selectedProducts.length > 0 
+        ? order.selectedProducts.map(p => p.name).join(', ')
+        : order.products || 'מוצרים';
+      
+      // Update the existing entry
+      const updatedEntry = {
+        ...expenses[existingIndex],
+        date: order.date,
+        description: productsDescription,
+        amount: order.finalAmount || order.amount,
+        workHours: totalWorkHours,
+        updatedAt: new Date().toISOString()
+      };
+      
+      await expenseRepo.update(updatedEntry);
+      console.log('✅ Income entry updated for order:', order.number);
+      
+    } catch (error) {
+      console.error('Error updating order income:', error);
+    }
+  }
+
+  async addOrderToIncome(order) {
+    console.log('🔄 addOrderToIncome called with order:', order);
     try {
       // Check if this order was already added to income
       const expenseRepo = window.App?.Repositories?.ExpenseRepository;
+      console.log('📦 ExpenseRepository available:', !!expenseRepo);
+      
       let expenses = [];
       
       if (expenseRepo) {
-        expenses = expenseRepo.getAll();
+        expenses = await expenseRepo.getAll();
+        console.log('📋 Current expenses count:', expenses.length);
       } else {
         expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
+        console.log('📋 Expenses from localStorage:', expenses.length);
       }
       
       // Check for existing entry
       const existingEntry = expenses.find(e => e.orderId === order.id || e.orderNumber === order.number);
       if (existingEntry) {
-        alert(`הזמנה #${order.number} כבר קיימת בהכנסות`);
+        console.log(`⚠️ הזמנה #${order.number} כבר קיימת בהכנסות`);
         return;
       }
       
@@ -1178,36 +1318,39 @@ class OrderManager {
         ? order.selectedProducts.map(p => p.name).join(', ')
         : order.products || 'מוצרים';
 
-      // Create expense entry
+      // Ensure order number exists
+      const orderNumber = order.number || order.id;
+      console.log('🔢 Order number for income:', orderNumber);
+
+      // Create expense entry for income
       const expenseEntry = {
         id: Date.now(),
         date: order.date,
         type: 'income',
-        category: 'מכירות',
-        description: `הזמנה #${order.number}: ${productsDescription}`,
+        category: 'sales',
+        description: productsDescription,
         amount: order.finalAmount || order.amount,
         workHours: totalWorkHours,
-        orderNumber: order.number,
-        orderId: order.id
+        orderNumber: orderNumber,
+        orderId: order.id,
+        createdAt: new Date().toISOString()
       };
+      
+      console.log('📝 Creating income entry:', expenseEntry);
 
       // Add to expenses (income is stored as positive amount in expenses)
       if (expenseRepo) {
-        expenses.push(expenseEntry);
-        expenseRepo.saveAll(expenses);
-        
-        // Silent addition to income - no alert needed as it's part of completion process
+        const result = await expenseRepo.add(expenseEntry);
+        console.log('✅ Order added to income:', orderNumber, 'Result:', result);
       } else {
         // Fallback to localStorage
         expenses.push(expenseEntry);
         localStorage.setItem('expenses', JSON.stringify(expenses));
-        
-        // Silent addition to income - no alert needed as it's part of completion process
+        console.log('✅ Order added to income (localStorage):', orderNumber);
       }
       
     } catch (error) {
-      console.error('Error adding order to income:', error);
-      alert('שגיאה בהוספת ההזמנה להכנסות: ' + error.message);
+      console.error('❌ Error adding order to income:', error);
     }
   }
 }

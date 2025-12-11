@@ -15,7 +15,6 @@
     "ציפוי- יציקה": "ציפוי זהב"
   },
   "products": [
-    [
       {
         "productType": "טבעת",
         "modelName": "סופי",
@@ -880,6 +879,5 @@
         "additions": [],
         "sitePrice": 1900.0
       }
-    ]
   ]
 }

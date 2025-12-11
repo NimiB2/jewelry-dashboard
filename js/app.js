@@ -46,41 +46,77 @@ function initializeSettings() {
             'זהב 14K': 13.4
         }
     };
+    
+    // Load from localStorage first (synchronous)
+    try {
+        const stored = JSON.parse(localStorage.getItem('settings') || '{}');
+        settings = { ...defaults, ...stored };
+    } catch {
+        settings = defaults;
+    }
+    localStorage.setItem('settings', JSON.stringify(settings));
+    
+    // Then sync with MongoDB (async, in background)
     if (window.App && App.SettingsService && typeof App.SettingsService.mergeDefaults === 'function') {
-        settings = App.SettingsService.mergeDefaults(defaults);
-    } else {
-        settings = { ...defaults, ...settings };
-        localStorage.setItem('settings', JSON.stringify(settings));
+        App.SettingsService.mergeDefaults(defaults).then(merged => {
+            settings = merged;
+            localStorage.setItem('settings', JSON.stringify(settings));
+        });
     }
     loadSettingsToUI();
 }
 
 // Collections Management Functions
-function getAllCollections() {
+async function getAllCollections() {
+    // Try to load from MongoDB first
+    try {
+        const response = await fetch('/api/settings/collections');
+        if (response.ok) {
+            const mongoCollections = await response.json();
+            if (mongoCollections && mongoCollections.length > 0) {
+                // Sync to localStorage
+                localStorage.setItem('collections', JSON.stringify(mongoCollections));
+                return mongoCollections;
+            }
+        }
+    } catch (error) {
+        console.warn('⚠️  MongoDB unavailable for collections, using localStorage');
+    }
+    
+    // Fallback to localStorage
     const stored = localStorage.getItem('collections');
     if (stored) {
         try {
-            const parsed = JSON.parse(stored);
-            // Ensure permanent collections are always present
-            const permanent = getPermanentCollections();
-            const combined = [...new Set([...permanent, ...parsed])];
-            return combined;
+            return JSON.parse(stored);
         } catch (e) {
             console.warn('Failed to parse stored collections, reinitializing:', e);
             const permanent = getPermanentCollections();
-            saveCollections(permanent);
+            await saveCollections(permanent);
             return permanent;
         }
     } else {
         // Initialize with permanent collections if none exist
         const permanent = getPermanentCollections();
-        saveCollections(permanent);
+        await saveCollections(permanent);
         return permanent;
     }
 }
 
+// Synchronous version for immediate access
+function getAllCollectionsSync() {
+    const stored = localStorage.getItem('collections');
+    if (stored) {
+        try {
+            return JSON.parse(stored);
+        } catch (e) {
+            return getPermanentCollections();
+        }
+    }
+    return getPermanentCollections();
+}
+
 function getEditableCollections() {
-    const collections = getAllCollections();
+    const collections = getAllCollectionsSync();
     // Return only editable collections (exclude permanent ones)
     return collections.filter(c => c !== 'הזמנה אישית' && c !== 'כללי');
 }
@@ -89,15 +125,32 @@ function getPermanentCollections() {
     return ['כללי', 'הזמנה אישית'];
 }
 
-function saveCollections(collections) {
+async function saveCollections(collections) {
     // Ensure permanent collections are always included
     const permanentCollections = getPermanentCollections();
     const filtered = collections.filter(c => !permanentCollections.includes(c));
     const finalCollections = [...permanentCollections, ...filtered];
+    
+    // Save to localStorage immediately
     localStorage.setItem('collections', JSON.stringify(finalCollections));
+    
+    // Save to MongoDB in background
+    try {
+        const response = await fetch('/api/settings/collections', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(finalCollections)
+        });
+        
+        if (response.ok) {
+            console.log('✅ Collections saved to MongoDB');
+        }
+    } catch (error) {
+        console.warn('⚠️  MongoDB save failed for collections:', error.message);
+    }
 }
 
-function addCollection() {
+async function addCollection() {
     const input = document.getElementById('newCollectionName');
     if (!input) return;
     
@@ -107,14 +160,15 @@ function addCollection() {
         return;
     }
     
-    const collections = getAllCollections();
+    // Get collections (await the async function)
+    const collections = await getAllCollections();
     if (collections.includes(name)) {
         alert('קולקציה זו כבר קיימת');
         return;
     }
     
     collections.push(name);
-    saveCollections(collections);
+    await saveCollections(collections);
     input.value = '';
     
     // Show success feedback
@@ -129,12 +183,14 @@ function addCollection() {
     // Re-render both sections
     renderCollectionsManager();
     renderCollectionsChecklist();
+    
+    console.log('✅ Collection added:', name);
 }
 
-function renameCollection(oldName, newName) {
+async function renameCollection(oldName, newName) {
     if (!newName || !newName.trim()) return;
     
-    const collections = getAllCollections();
+    const collections = await getAllCollections();
     const index = collections.indexOf(oldName);
     if (index === -1) return;
     
@@ -144,12 +200,12 @@ function renameCollection(oldName, newName) {
     }
     
     collections[index] = newName.trim();
-    saveCollections(collections);
+    await saveCollections(collections);
     renderCollectionsManager();
     renderCollectionsChecklist();
 }
 
-function deleteCollection(name) {
+async function deleteCollection(name) {
     const permanentCollections = getPermanentCollections();
     if (permanentCollections.includes(name)) {
         alert(`לא ניתן למחוק את הקולקציה "${name}"`);
@@ -160,8 +216,8 @@ function deleteCollection(name) {
         return;
     }
     
-    const collections = getAllCollections().filter(c => c !== name);
-    saveCollections(collections);
+    const collections = (await getAllCollections()).filter(c => c !== name);
+    await saveCollections(collections);
     renderCollectionsManager();
     renderCollectionsChecklist();
 }
@@ -609,10 +665,10 @@ function saveSettings() {
     settings.profitMultiplier['silver'] = parseFloat(document.getElementById('profit_silver').value);
     settings.profitMultiplier['plating'] = parseFloat(document.getElementById('profit_plating').value);
 
+    // Save to both localStorage and MongoDB
+    localStorage.setItem('settings', JSON.stringify(settings));
     if (window.App && App.SettingsService && typeof App.SettingsService.set === 'function') {
-        App.SettingsService.set(settings);
-    } else {
-        localStorage.setItem('settings', JSON.stringify(settings));
+        App.SettingsService.set(settings); // This will save to MongoDB async
     }
     
     const savedMsg = document.getElementById('settingsSaved');
@@ -676,25 +732,25 @@ function setupEventListeners() {
     });
 }
 
-function switchTab(tabName) {
+async function switchTab(tabName) {
     document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
     document.querySelectorAll('.section').forEach(section => section.classList.remove('active'));
 
-    document.querySelector(`.nav-tab[onclick="switchTab('${tabName}')"]`).classList.add('active');
-    document.getElementById(tabName).classList.add('active');
+    document.querySelector(`.nav-tab[onclick="switchTab('${tabName}')"]`)?.classList.add('active');
+    document.getElementById(tabName)?.classList.add('active');
     
-    // Load data when switching to specific tabs
+    // Load data when switching to specific tabs (await async functions)
     if (tabName === 'pricing') {
-        loadProducts();
+        await loadProducts();
     } else if (tabName === 'expenses') {
         // Load expense data automatically when entering expenses page
         if (window.App && App.Managers && App.Managers.expenseManager) {
-            App.Managers.expenseManager.loadExpenseData();
+            await App.Managers.expenseManager.loadExpenseData();
         }
     } else if (tabName === 'orders') {
         // Load orders data automatically when entering orders page
         if (window.App && App.Managers && App.Managers.orderManager) {
-            App.Managers.orderManager.loadOrders();
+            await App.Managers.orderManager.loadOrders();
         }
     }
 }
@@ -709,8 +765,9 @@ function showAddExpenseModal() {
     return App.Managers.expenseManager.showAddExpenseModal();
 }
 
-function addExpense(e) {
-    return App.Managers.expenseManager.addExpense(e);
+async function addExpense(e) {
+    e.preventDefault();
+    await App.Managers.expenseManager.addExpense(e);
 }
 
 function toggleEditRecurringMonths() {
@@ -764,20 +821,21 @@ function toggleEditWorkHoursField() {
     }
 }
 
-function showEditExpenseModal(id) {
-    return App.Managers.expenseManager.showEditExpenseModal(id);
+async function showEditExpenseModal(id) {
+    await App.Managers.expenseManager.showEditExpenseModal(id);
 }
 
-function saveEditedExpense(e) {
-    return App.Managers.expenseManager.saveEditedExpense(e);
+async function saveEditedExpense(e) {
+    e.preventDefault();
+    await App.Managers.expenseManager.saveEditedExpense(e);
 }
 
-function deleteExpense(id) {
-    return App.Managers.expenseManager.deleteExpense(id);
+async function deleteExpense(id) {
+    await App.Managers.expenseManager.deleteExpense(id);
 }
 
-function loadExpenseData() {
-    App.Managers.expenseManager.loadExpenseData();
+async function loadExpenseData() {
+    await App.Managers.expenseManager.loadExpenseData();
     // Apply stat card colors based on current DOM totals (backward-compatible behavior)
     const incomeCard = document.getElementById('totalIncome')?.parentElement;
     const expensesCard = document.getElementById('totalExpenses')?.parentElement;
@@ -804,7 +862,8 @@ function addRecurringExpenseToFutureMonths(expense) {
 // Pricing Functions
 // ---------- Pricing helpers bound to SettingsService categories ----------
 function getSettingsObject() {
-    try { if (window.App?.SettingsService?.get) return App.SettingsService.get(); } catch {}
+    // Always read from localStorage for synchronous access
+    // SettingsService syncs MongoDB → localStorage automatically
     try { return JSON.parse(localStorage.getItem('settings') || '{}'); } catch { return {}; }
 }
 
@@ -1410,8 +1469,8 @@ function addToProducts() {
     return App.Managers.productManager.addToProducts();
 }
 
-function loadProducts() {
-    return App.Managers.productManager.loadProducts();
+async function loadProducts() {
+    await App.Managers.productManager.loadProducts();
 }
 
 function showAddProductModal() {
@@ -1427,7 +1486,14 @@ function showEditProductModal(id) {
 }
 
 function saveEditedProduct(e) {
+    if (e) e.preventDefault();
     return App.Managers.productManager.saveEditedProduct(e);
+}
+
+// Click handler for edit product button (avoids form submit issues)
+async function saveEditedProductClick() {
+    console.log('🔘 saveEditedProductClick called');
+    await App.Managers.productManager.saveEditedProductDirect();
 }
 
 function deleteProduct(id) {
@@ -1435,8 +1501,8 @@ function deleteProduct(id) {
 }
 
 // Orders Functions
-function loadOrders() {
-    return App.Managers.orderManager.loadOrders();
+async function loadOrders() {
+    await App.Managers.orderManager.loadOrders();
 }
 
 // Utility function to fix all decimal IDs in products
@@ -1474,32 +1540,40 @@ function showAddOrderModal() {
     return App.Managers.orderManager.showAddOrderModal();
 }
 
-function addOrder(e) {
-    return App.Managers.orderManager.addOrder(e);
+async function addOrder(e) {
+    if (e) e.preventDefault();
+    await App.Managers.orderManager.addOrder(e);
 }
 
-function deleteOrder(id) {
-    return App.Managers.orderManager.deleteOrder(id);
+// Click handler for add order button (avoids form submit issues)
+async function addOrderClick() {
+    console.log('🔘 addOrderClick called');
+    await App.Managers.orderManager.addOrderDirect();
 }
 
-function cycleOrderStatus(id) {
-    return App.Managers.orderManager.cycleOrderStatus(id);
+async function deleteOrder(id) {
+    await App.Managers.orderManager.deleteOrder(id);
+}
+
+async function cycleOrderStatus(id) {
+    await App.Managers.orderManager.cycleOrderStatus(id);
 }
 
 function showOrderDetails(id) {
     return App.Managers.orderManager.showOrderDetails(id);
 }
 
-function toggleReceiptStatus(id) {
-    return App.Managers.orderManager.toggleReceiptStatus(id);
+async function toggleReceiptStatus(id) {
+    await App.Managers.orderManager.toggleReceiptStatus(id);
 }
 
 function showEditOrderModal(id) {
     return App.Managers.orderManager.showEditOrderModal(id);
 }
 
-function saveEditedOrder(event) {
-    return App.Managers.orderManager.saveEditedOrder(event);
+async function saveEditedOrder(event) {
+    event.preventDefault();
+    await App.Managers.orderManager.saveEditedOrder(event);
 }
 
 function toggleCompletedOrders() {
@@ -1573,9 +1647,10 @@ function togglePricingCalculator() {
 }
 
 // Global functions for edit modal
-function updateEditPricing() {
+// Pass updateSitePrice=true to recalculate and update the site price field
+function updateEditPricing(updateSitePrice = false) {
     if (window.App && App.Managers && App.Managers.productManager) {
-        App.Managers.productManager.updateEditPricing();
+        App.Managers.productManager.updateEditPricing(updateSitePrice);
     }
 }
 

@@ -5,7 +5,7 @@ window.App = window.App || {};
 window.App.Managers = window.App.Managers || {};
 
 class ProductManager {
-  addToProducts() {
+  async addToProducts() {
     // Show button feedback
     const button = document.querySelector('button[onclick="addToProducts()"]');
     const originalText = button ? button.textContent : '';
@@ -17,7 +17,7 @@ class ProductManager {
     
     const repo = window.App.Repositories.ProductRepository;
     // Ensure latest state
-    products = repo.getAll();
+    products = await repo.getAll();
     // Gather additions for persistence (optional, lightweight)
     const additions = Array.from(document.querySelectorAll('#additionsList .row')).map(r => {
       const name = r.querySelector('.addition-name')?.value?.trim() || '';
@@ -59,8 +59,8 @@ class ProductManager {
       collections
     };
     products.push(product);
-    repo.saveAll(products);
-    this.loadProducts();
+    await repo.saveAll(products);
+    await this.loadProducts();
     
     // Restore button and show success feedback
     if (button) {
@@ -75,10 +75,10 @@ class ProductManager {
     }
   }
 
-  loadProducts() {
+  async loadProducts() {
     const repo = window.App.Repositories.ProductRepository;
     // Ensure latest state
-    products = repo.getAll();
+    products = await repo.getAll();
     
     // Fix any decimal IDs in existing products
     this.fixDecimalIds();
@@ -213,13 +213,13 @@ class ProductManager {
     this.loadProducts();
   }
 
-  showEditProductModal(id) {
+  async showEditProductModal(id) {
     const repo = window.App.Repositories.ProductRepository;
     // Ensure latest state
-    products = repo.getAll();
+    products = await repo.getAll();
     
     // Fix any decimal IDs in existing products
-    this.fixDecimalIds();
+    await this.fixDecimalIds();
     
     // Convert id to number to ensure proper comparison
     const numericId = parseInt(id);
@@ -248,13 +248,106 @@ class ProductManager {
     }
   }
 
-  saveEditedProduct(e) {
-    e.preventDefault();
+  // Direct save without event (called from button click)
+  async saveEditedProductDirect() {
+    console.log('🔄 saveEditedProductDirect called');
+    
     const repo = window.App.Repositories.ProductRepository;
     // Ensure latest state
-    products = repo.getAll();
+    products = await repo.getAll();
+    console.log('📦 Loaded', products.length, 'products from repo');
+    
     const id = parseInt(document.getElementById('editProductId').value);
+    console.log('🔍 Looking for product with ID:', id);
+    
     const index = products.findIndex(p => p.id === id);
+    console.log('📍 Found at index:', index);
+    
+    if (index > -1) {
+      // Gather additions
+      const additions = Array.from(document.querySelectorAll('#editAdditionsList .row')).map(r => {
+        const name = r.querySelector('.addition-name')?.value?.trim() || '';
+        const price = parseFloat(r.querySelector('.addition-price')?.value || '0') || 0;
+        return { name, price };
+      }).filter(a => a.name || a.price);
+
+      // Read selected collections
+      let collections = ['כללי'];
+      try {
+        const selected = [];
+        document.querySelectorAll('#editCollectionsChecklist input.collection-checkbox:checked')
+          .forEach(cb => selected.push(cb.value));
+        if (selected.length) collections = selected.filter(Boolean);
+      } catch(_) {}
+
+      const newMaterial = document.getElementById('editProductMaterial').value;
+      const newWeight = parseFloat(document.getElementById('editProductWeight').value) || 0;
+      const newSitePrice = parseFloat(document.getElementById('editProductSitePrice').value) || 0;
+      const newName = document.getElementById('editProductName').value;
+      const newType = document.getElementById('editProductType').value;
+      
+      // Build updated product object
+      const updatedProduct = {
+        ...products[index],
+        id: id, // Ensure ID is preserved
+        type: newType,
+        name: newName,
+        material: newMaterial,
+        weight: newWeight,
+        sitePrice: newSitePrice,
+        laborTime: this.getLaborTimeForMaterial(newMaterial),
+        additions,
+        collections,
+        updatedAt: new Date().toISOString()
+      };
+      
+      // Remove MongoDB _id to avoid conflicts
+      delete updatedProduct._id;
+      
+      console.log('💾 Saving product:', updatedProduct);
+      
+      try {
+        await repo.update(updatedProduct);
+        console.log('✅ Product saved to repository');
+        
+        // Update local array
+        products[index] = updatedProduct;
+        
+        // Close modal
+        closeModal('editProductModal');
+        
+        // Reload products to show updated data
+        await this.loadProducts();
+        
+        console.log('✅ Product updated successfully:', updatedProduct.name);
+        
+        // Stay on products tab
+        if (typeof switchTab === 'function') {
+          switchTab('pricing');
+        }
+        
+      } catch (err) {
+        console.error('❌ Failed to save product:', err);
+        alert('שגיאה בשמירת המוצר. אנא נסה שוב.');
+      }
+    } else {
+      console.error('❌ Product not found for update, ID:', id);
+      alert('שגיאה: לא נמצא מוצר לעדכון. אנא רענן את הדף ונסה שוב.');
+    }
+  }
+
+  async saveEditedProduct(e) {
+    if (e) e.preventDefault();
+    console.log('🔄 saveEditedProduct called');
+    
+    const repo = window.App.Repositories.ProductRepository;
+    // Ensure latest state
+    products = await repo.getAll();
+    console.log('📦 Loaded', products.length, 'products from repo');
+    const id = parseInt(document.getElementById('editProductId').value);
+    console.log('🔍 Looking for product with ID:', id);
+    const index = products.findIndex(p => p.id === id);
+    console.log('📍 Found at index:', index);
     if (index > -1) {
       // Gather additions
       const additions = Array.from(document.querySelectorAll('#editAdditionsList .row')).map(r => {
@@ -284,7 +377,9 @@ class ProductManager {
       const finalExpenses = profitMult > 0 ? recommendedPrice / profitMult : 0;
 
       const newMaterial = document.getElementById('editProductMaterial').value;
-      products[index] = {
+      
+      // Build updated product object
+      const updatedProduct = {
         ...products[index],
         type: document.getElementById('editProductType').value,
         name: document.getElementById('editProductName').value,
@@ -293,13 +388,35 @@ class ProductManager {
         cost: finalExpenses,
         price: recommendedPrice,
         sitePrice: parseFloat(document.getElementById('editProductSitePrice').value),
-        laborTime: this.getLaborTimeForMaterial(newMaterial), // Update labor time if material changed
+        laborTime: this.getLaborTimeForMaterial(newMaterial),
         additions,
-        collections
+        collections,
+        updatedAt: new Date().toISOString()
       };
-      repo.saveAll(products);
+      
+      // Remove MongoDB _id to avoid conflicts
+      delete updatedProduct._id;
+      
+      console.log('💾 Calling repo.update with:', updatedProduct);
+      
+      // Use update method instead of saveAll for single product edit
+      try {
+        await repo.update(updatedProduct);
+        console.log('✅ repo.update completed');
+      } catch (err) {
+        console.error('❌ repo.update failed:', err);
+      }
+      
+      // Update local array
+      products[index] = updatedProduct;
+      
       closeModal('editProductModal');
-      this.loadProducts();
+      await this.loadProducts();
+      
+      console.log('✅ Product updated successfully:', updatedProduct.name);
+    } else {
+      console.error('❌ Product not found for update, ID:', id);
+      alert('שגיאה: לא נמצא מוצר לעדכון. אנא רענן את הדף ונסה שוב.');
     }
   }
 
@@ -308,7 +425,7 @@ class ProductManager {
     if (!container) return;
     
     container.innerHTML = '';
-    const collections = getAllCollections();
+    const collections = getAllCollectionsSync(); // Use sync version for immediate rendering
     
     collections.forEach(name => {
       const label = document.createElement('label');
@@ -357,24 +474,27 @@ class ProductManager {
     `;
     
     const [nameInp, priceInp, removeBtn] = row.querySelectorAll('input,button');
-    priceInp.addEventListener('input', () => this.updateEditPricing());
-    priceInp.addEventListener('change', () => this.updateEditPricing());
+    // Pass true to update site price when user changes additions
+    priceInp.addEventListener('input', () => this.updateEditPricing(true));
+    priceInp.addEventListener('change', () => this.updateEditPricing(true));
     removeBtn.addEventListener('click', () => { 
       row.remove(); 
-      this.updateEditPricing(); 
+      this.updateEditPricing(true); 
     });
     
     list.appendChild(row);
   }
 
-  updateEditPricing() {
+  // updateSitePrice: if true, overwrite the site price input with calculated value
+  // Default is false to preserve user's custom price
+  updateEditPricing(updateSitePrice = false) {
     const material = document.getElementById('editProductMaterial')?.value || '';
     const weight = parseFloat(document.getElementById('editProductWeight')?.value) || 0;
     const sitePriceInput = document.getElementById('editProductSitePrice');
 
     if (!material || !weight) {
       document.getElementById('editRecommendedPrice').textContent = '₪0';
-      if (sitePriceInput) sitePriceInput.value = '0';
+      // Don't overwrite site price - it may have a saved value
       return;
     }
 
@@ -407,11 +527,12 @@ class ProductManager {
     const profitMult = this.getProfitMultiplier(material);
     const recommendedPrice = finalExpenses * profitMult;
 
-    // Update display
+    // Update recommended price display
     document.getElementById('editRecommendedPrice').textContent = `₪${recommendedPrice.toFixed(2)}`;
     
-    // Always sync site price with recommended price
-    if (sitePriceInput) {
+    // Only update site price if explicitly requested (e.g., when user changes material/weight)
+    // Do NOT update when initially opening the modal
+    if (updateSitePrice && sitePriceInput) {
       sitePriceInput.value = recommendedPrice.toFixed(2);
     }
   }
@@ -510,16 +631,16 @@ class ProductManager {
     return window.getVatMultiplier ? window.getVatMultiplier() : 1;
   }
 
-  deleteProduct(id) {
+  async deleteProduct(id) {
     if (confirm('האם אתה בטוח שברצונך למחוק מוצר זה?')) {
       const repo = window.App.Repositories.ProductRepository;
       // Ensure latest state
-      products = repo.getAll();
+      products = await repo.getAll();
       // Convert id to number to ensure proper comparison
       const numericId = parseInt(id);
       products = products.filter(p => p.id !== numericId);
-      repo.saveAll(products);
-      this.loadProducts();
+      await repo.saveAll(products);
+      await this.loadProducts();
     }
   }
 

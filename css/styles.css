@@ -560,7 +560,13 @@ tr:hover {
     margin-bottom: 10px;
 }
 
-.products-input-container input {
+.products-input-container,
+.product-search-container {
+    position: relative;
+}
+
+.products-input-container input,
+.product-search-container input {
     width: 100%;
     padding: 10px;
     border: 1px solid #ccc;
@@ -579,8 +585,8 @@ tr:hover {
     border-radius: 0 0 4px 4px;
     max-height: 200px;
     overflow-y: auto;
-    z-index: 1000;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    z-index: 99999;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
 .suggestion-item {
