@@ -663,8 +663,8 @@ class OrderManager {
       
       console.log('✅ Order added:', newOrder.number);
       
-      // Add to income immediately when order is created
-      await this.addOrderToIncome(newOrder);
+      // Income is added only when order status becomes "paid"
+      // (not on creation)
       
       // Close modal
       closeModal('addOrderModal');
@@ -796,19 +796,37 @@ class OrderManager {
   // Delete income entry when order is deleted
   async deleteOrderFromIncome(order) {
     try {
-      const expenseRepo = window.App?.Repositories?.ExpenseRepository;
-      if (!expenseRepo) return;
+      console.log('🗑️ Deleting income for order:', order.id, order.number);
       
-      let expenses = await expenseRepo.getAll();
+      // Get all expenses from API
+      const response = await fetch('/api/expenses');
+      if (!response.ok) return;
       
-      // Find income entry for this order
-      const incomeEntry = expenses.find(e => 
-        e.orderId === order.id || e.orderNumber === order.number
-      );
+      const expenses = await response.json();
+      
+      // Find income entry for this order by orderId (most reliable)
+      const incomeEntry = expenses.find(e => e.orderId === order.id);
       
       if (incomeEntry) {
-        await expenseRepo.removeById(incomeEntry.id);
-        console.log('✅ Income entry deleted for order:', order.number || order.id);
+        console.log('🔍 Found income entry to delete:', incomeEntry.id, incomeEntry.description);
+        
+        // Delete via API
+        const deleteResponse = await fetch(`/api/expenses/${incomeEntry.id}`, {
+          method: 'DELETE'
+        });
+        
+        if (deleteResponse.ok) {
+          console.log('✅ Income entry deleted for order:', order.number || order.id);
+          
+          // Also update localStorage
+          const localExpenses = JSON.parse(localStorage.getItem('expenses') || '[]');
+          const filtered = localExpenses.filter(e => e.id !== incomeEntry.id);
+          localStorage.setItem('expenses', JSON.stringify(filtered));
+        } else {
+          console.error('❌ Failed to delete income:', deleteResponse.status);
+        }
+      } else {
+        console.log('⚠️ No income entry found for order:', order.id);
       }
     } catch (error) {
       console.error('Error deleting order from income:', error);
@@ -838,7 +856,11 @@ class OrderManager {
       const oldStatus = order.status;
       order.status = nextStatus.key;
       
-      // Note: Income is now added only when order is completed, not when paid
+      // Add income when order status changes to "paid_preparing" (customer paid)
+      if (oldStatus === 'new' && nextStatus.key === 'paid_preparing') {
+        console.log('💰 Order paid - adding to income:', order.number);
+        await this.addOrderToIncome(order);
+      }
       
       await repo.update(order);
       
@@ -1285,47 +1307,23 @@ class OrderManager {
 
   async addOrderToIncome(order) {
     console.log('🔄 addOrderToIncome called with order:', order);
+    
     try {
-      // Check if this order was already added to income
-      const expenseRepo = window.App?.Repositories?.ExpenseRepository;
-      console.log('📦 ExpenseRepository available:', !!expenseRepo);
-      
-      let expenses = [];
-      
-      if (expenseRepo) {
-        expenses = await expenseRepo.getAll();
-        console.log('📋 Current expenses count:', expenses.length);
-      } else {
-        expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
-        console.log('📋 Expenses from localStorage:', expenses.length);
-      }
-      
-      // Check for existing entry
-      const existingEntry = expenses.find(e => e.orderId === order.id || e.orderNumber === order.number);
-      if (existingEntry) {
-        console.log(`⚠️ הזמנה #${order.number} כבר קיימת בהכנסות`);
-        return;
-      }
-      
       // Calculate work hours
       const workHoursData = this.calculateWorkHours(order.selectedProducts || []);
-      
-      // Use calculated work hours automatically (no user prompt)
-      const totalWorkHours = workHoursData.totalHours;
+      const totalWorkHours = workHoursData.totalHours || 0;
       
       // Create products description
       const productsDescription = order.selectedProducts && order.selectedProducts.length > 0 
         ? order.selectedProducts.map(p => p.name).join(', ')
         : order.products || 'מוצרים';
 
-      // Ensure order number exists
       const orderNumber = order.number || order.id;
-      console.log('🔢 Order number for income:', orderNumber);
 
-      // Create expense entry for income
-      const expenseEntry = {
-        id: Date.now(),
-        date: order.date,
+      // Create income entry
+      const incomeEntry = {
+        id: Date.now() + Math.floor(Math.random() * 1000),
+        date: order.date || new Date().toISOString().split('T')[0],
         type: 'income',
         category: 'sales',
         description: productsDescription,
@@ -1336,17 +1334,25 @@ class OrderManager {
         createdAt: new Date().toISOString()
       };
       
-      console.log('📝 Creating income entry:', expenseEntry);
+      console.log('📝 Creating income entry:', incomeEntry);
 
-      // Add to expenses (income is stored as positive amount in expenses)
-      if (expenseRepo) {
-        const result = await expenseRepo.add(expenseEntry);
-        console.log('✅ Order added to income:', orderNumber, 'Result:', result);
+      // Direct API call to add income
+      const response = await fetch('/api/expenses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(incomeEntry)
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Income added for order #' + orderNumber, result);
+        
+        // Also update localStorage
+        const localExpenses = JSON.parse(localStorage.getItem('expenses') || '[]');
+        localExpenses.push(incomeEntry);
+        localStorage.setItem('expenses', JSON.stringify(localExpenses));
       } else {
-        // Fallback to localStorage
-        expenses.push(expenseEntry);
-        localStorage.setItem('expenses', JSON.stringify(expenses));
-        console.log('✅ Order added to income (localStorage):', orderNumber);
+        console.error('❌ Failed to add income:', response.status, await response.text());
       }
       
     } catch (error) {

@@ -646,7 +646,7 @@ function loadSettingsToUI() {
     setValueIfExists('profit_plating', settings.profitMultiplier['plating']);
 }
 
-function saveSettings() {
+async function saveSettings() {
     settings.vatRate = parseFloat(document.getElementById('vatRate').value) / 100;
     settings.processingFee = parseFloat(document.getElementById('processingFee').value) / 100;
     settings.packagingCost = parseFloat(document.getElementById('packagingCost').value);
@@ -668,7 +668,8 @@ function saveSettings() {
     // Save to both localStorage and MongoDB
     localStorage.setItem('settings', JSON.stringify(settings));
     if (window.App && App.SettingsService && typeof App.SettingsService.set === 'function') {
-        App.SettingsService.set(settings); // This will save to MongoDB async
+        await App.SettingsService.set(settings);
+        console.log('✅ Settings saved to MongoDB');
     }
     
     const savedMsg = document.getElementById('settingsSaved');
@@ -676,7 +677,7 @@ function saveSettings() {
     setTimeout(() => { savedMsg.style.display = 'none'; }, 2000);
 
     updatePricing();
-    loadExpenseData();
+    await loadExpenseData();
     
     // Refresh products display to reflect new settings
     // These old settings affect material prices and labor, so they impact existing products
@@ -761,12 +762,24 @@ function toggleWorkHoursField() {
         : null;
 }
 
+function toggleRecurringBySubtype() {
+    return window.App && App.Managers && App.Managers.expenseManager
+        ? App.Managers.expenseManager.toggleRecurringBySubtype()
+        : null;
+}
+
+function toggleEditRecurringBySubtype() {
+    return window.App && App.Managers && App.Managers.expenseManager
+        ? App.Managers.expenseManager.toggleEditRecurringBySubtype()
+        : null;
+}
+
 function showAddExpenseModal() {
     return App.Managers.expenseManager.showAddExpenseModal();
 }
 
 async function addExpense(e) {
-    e.preventDefault();
+    if (e) e.preventDefault();
     await App.Managers.expenseManager.addExpense(e);
 }
 
@@ -782,43 +795,9 @@ function toggleEditRecurringMonths() {
 }
 
 function toggleEditWorkHoursField() {
-    const expenseType = document.getElementById('editExpenseType').value;
-    const workHoursGroup = document.getElementById('editWorkHoursGroup');
-    const categorySelect = document.getElementById('editExpenseCategory');
-    const descriptionGroup = document.getElementById('editExpenseDescription').parentElement;
-    const recurringGroup = document.getElementById('editIsRecurring').parentElement;
-    const recurringMonthsGroup = document.getElementById('editRecurringMonths');
-    
-    if (expenseType === 'income') {
-        if (workHoursGroup) workHoursGroup.style.display = 'block';
-        // Show description for income and keep it required
-        descriptionGroup.style.display = 'block';
-        document.getElementById('editExpenseDescription').setAttribute('required', 'required');
-        recurringGroup.style.display = 'none';
-        if (recurringMonthsGroup) recurringMonthsGroup.style.display = 'none';
-        
-        // Set income categories
-        categorySelect.innerHTML = `
-            <option value="">בחר קטגוריה</option>
-            <option value="sales">מכירות</option>
-            <option value="other">אחר</option>
-        `;
-    } else {
-        if (workHoursGroup) workHoursGroup.style.display = 'none';
-        descriptionGroup.style.display = 'block';
-        // Ensure description required for expenses as well
-        document.getElementById('editExpenseDescription').setAttribute('required', 'required');
-        recurringGroup.style.display = 'block';
-        
-        // Set expense categories
-        categorySelect.innerHTML = `
-            <option value="">בחר קטגוריה</option>
-            <option value="fixed">הוצאות קבועות</option>
-            <option value="variable">הוצאות משתנות</option>
-            <option value="general">הוצאות כלליות</option>
-            <option value="other">אחר</option>
-        `;
-    }
+    return window.App && App.Managers && App.Managers.expenseManager
+        ? App.Managers.expenseManager.toggleEditWorkHoursField()
+        : null;
 }
 
 async function showEditExpenseModal(id) {
@@ -826,7 +805,7 @@ async function showEditExpenseModal(id) {
 }
 
 async function saveEditedExpense(e) {
-    e.preventDefault();
+    if (e) e.preventDefault();
     await App.Managers.expenseManager.saveEditedExpense(e);
 }
 

@@ -148,7 +148,7 @@ class ProductManager {
             <td>${collectionsText}</td>
             <td title="עלות מחושבת דינמית על בסיס ההגדרות הנוכחיות">₪${currentCost.toFixed(2)}</td>
             <td title="מחיר מינימלי לרווח של 30%" style="background-color: #e8f5e8; font-weight: bold;">₪${recommendedMinPrice.toFixed(2)}</td>
-            <td>₪${originalPrice.toFixed(2)}</td>
+            <td class="site-price-cell" title="מחיר באתר">₪${originalPrice.toFixed(2)}</td>
             <td>₪${discountedPrice.toFixed(2)}</td>
             <td style="color: ${profitAmount >= 0 ? 'green' : 'red'}">₪${profitAmount.toFixed(2)}</td>
             <td style="color: ${isLowProfit ? '#f44336' : (profitPercent >= 0 ? 'green' : 'red')}; font-weight: ${isLowProfit ? 'bold' : 'normal'}">${profitPercent.toFixed(1)}% ${isLowProfit ? '⚠️' : ''}</td>

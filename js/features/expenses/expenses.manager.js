@@ -6,105 +6,160 @@ window.App.Managers = window.App.Managers || {};
 
 class ExpenseManager {
   async addExpense(e) {
-    e.preventDefault();
-    const repo = window.App.Repositories.ExpenseRepository;
-    // Ensure latest state (await async call)
-    expenses = await repo.getAll();
-    // Sanitize possible null/invalid entries from previous data
-    expenses = (expenses || []).filter(e => e && typeof e === 'object');
-    const expenseType = document.getElementById('expenseType').value;
-    const newExpense = {
-      id: Date.now(),
-      date: document.getElementById('expenseDate').value,
-      type: expenseType,
-      category: document.getElementById('expenseCategory').value,
-      description: document.getElementById('expenseDescription').value,
-      amount: parseFloat(document.getElementById('expenseAmount').value),
-      recurring: expenseType === 'expense' ? document.getElementById('isRecurring').checked : false,
-      createdAt: new Date().toISOString()
-    };
-    if (newExpense.type === 'income') {
-      const workHours = parseFloat(document.getElementById('expenseWorkHours').value) || 0;
-      newExpense.workHours = workHours;
+    if (e) e.preventDefault();
+    console.log('🔄 addExpense called');
+    
+    try {
+      const repo = window.App.Repositories.ExpenseRepository;
+      if (!repo) {
+        console.error('❌ ExpenseRepository not found!');
+        alert('שגיאה: מאגר הנתונים לא נמצא');
+        return;
+      }
+      
+      const expenseType = document.getElementById('expenseType').value;
+      const isExpense = expenseType === 'expense';
+      const subtypeSelect = document.getElementById('expenseSubtype');
+      const categorySelect = document.getElementById('expenseCategory');
+      
+      const newExpense = {
+        id: Date.now(),
+        date: document.getElementById('expenseDate').value,
+        type: expenseType,
+        // For expenses: use subtype (fixed/variable), for income: use category
+        category: isExpense ? (subtypeSelect?.value || 'variable') : (categorySelect?.value || ''),
+        subtype: isExpense ? (subtypeSelect?.value || 'variable') : null,
+        description: document.getElementById('expenseDescription').value,
+        amount: parseFloat(document.getElementById('expenseAmount').value),
+        // Only fixed expenses can be recurring
+        recurring: isExpense && subtypeSelect?.value === 'fixed' ? document.getElementById('isRecurring').checked : false,
+        createdAt: new Date().toISOString()
+      };
+      
+      console.log('📝 New expense data:', newExpense);
+      
+      if (newExpense.type === 'income') {
+        const workHours = parseFloat(document.getElementById('expenseWorkHours').value) || 0;
+        newExpense.workHours = workHours;
+      }
+      
+      if (newExpense.type === 'expense' && newExpense.recurring) {
+        newExpense.recurringMonths = parseInt(document.getElementById('recurringMonthsCount').value) || 1;
+        newExpense.recurrenceGroupId = newExpense.id;
+        // For recurring expenses, need to add multiple entries
+        await this.addRecurringExpenseToFutureMonths(newExpense);
+      } else {
+        // Add single expense directly to MongoDB
+        const result = await repo.add(newExpense);
+        console.log('✅ Expense added to MongoDB:', newExpense.type, newExpense.amount, 'Result:', result);
+      }
+      
+      closeModal('addExpenseModal');
+      await this.loadExpenseData();
+    } catch (error) {
+      console.error('❌ Error adding expense:', error);
+      alert('שגיאה בהוספת רשומה: ' + error.message);
     }
-    if (newExpense.type === 'expense' && newExpense.recurring) {
-      newExpense.recurringMonths = parseInt(document.getElementById('recurringMonthsCount').value) || 1;
-      newExpense.recurrenceGroupId = newExpense.id;
-      this.addRecurringExpenseToFutureMonths(newExpense);
-    } else {
-      expenses.push(newExpense);
-    }
-    await repo.saveAll(expenses);
-    console.log('✅ Expense added:', newExpense.type, newExpense.amount);
-    closeModal('addExpenseModal');
-    await this.loadExpenseData();
   }
 
   toggleWorkHoursField() {
     const expenseType = document.getElementById('expenseType').value;
     const workHoursGroup = document.getElementById('workHoursGroup');
-    const categorySelect = document.getElementById('expenseCategory');
+    const categoryGroup = document.getElementById('categoryGroup');
     const descriptionGroup = document.getElementById('expenseDescription').parentElement;
-    const recurringGroup = document.getElementById('isRecurring').parentElement;
+    const recurringGroup = document.getElementById('recurringGroup');
     const recurringMonthsGroup = document.getElementById('recurringMonths');
+    const expenseSubtypeGroup = document.getElementById('expenseSubtypeGroup');
+    
     if (expenseType === 'income') {
-      workHoursGroup.style.display = 'block';
-      descriptionGroup.style.display = 'block';
-      document.getElementById('expenseDescription').setAttribute('required', 'required');
+      // Income: show category (sales/other), work hours, hide recurring and subtype
+      if (workHoursGroup) workHoursGroup.style.display = 'block';
+      if (descriptionGroup) descriptionGroup.style.display = 'block';
+      if (categoryGroup) categoryGroup.style.display = 'block';
+      if (expenseSubtypeGroup) expenseSubtypeGroup.style.display = 'none';
       if (recurringGroup) recurringGroup.style.display = 'none';
       if (recurringMonthsGroup) recurringMonthsGroup.style.display = 'none';
-      categorySelect.innerHTML = `
-            <option value="">בחר קטגוריה</option>
-            <option value="sales">מכירות</option>
-            <option value="other">אחר</option>
-        `;
     } else {
-      workHoursGroup.style.display = 'none';
-      descriptionGroup.style.display = 'block';
-      document.getElementById('expenseDescription').setAttribute('required', 'required');
+      // Expense: show subtype (fixed/variable), hide category
+      if (workHoursGroup) workHoursGroup.style.display = 'none';
+      if (descriptionGroup) descriptionGroup.style.display = 'block';
+      if (categoryGroup) categoryGroup.style.display = 'none';
+      if (expenseSubtypeGroup) expenseSubtypeGroup.style.display = 'block';
+      const workHoursInput = document.getElementById('expenseWorkHours');
+      if (workHoursInput) workHoursInput.value = '';
+      
+      // Show recurring option only for fixed expenses
+      this.toggleRecurringBySubtype();
+    }
+  }
+  
+  toggleRecurringBySubtype() {
+    const subtypeSelect = document.getElementById('expenseSubtype');
+    const recurringGroup = document.getElementById('recurringGroup');
+    const recurringMonthsGroup = document.getElementById('recurringMonths');
+    
+    if (subtypeSelect && subtypeSelect.value === 'fixed') {
+      // Fixed expense - show recurring option
       if (recurringGroup) recurringGroup.style.display = 'block';
-      document.getElementById('expenseWorkHours').value = '';
-      categorySelect.innerHTML = `
-            <option value="">בחר קטגוריה</option>
-            <option value="fixed">הוצאות קבועות</option>
-            <option value="variable">הוצאות משתנות</option>
-            <option value="general">הוצאות כלליות</option>
-            <option value="other">אחר</option>
-        `;
+    } else {
+      // Variable expense - hide recurring option
+      if (recurringGroup) recurringGroup.style.display = 'none';
+      if (recurringMonthsGroup) recurringMonthsGroup.style.display = 'none';
+      const isRecurringCheckbox = document.getElementById('isRecurring');
+      if (isRecurringCheckbox) isRecurringCheckbox.checked = false;
     }
   }
 
   toggleEditWorkHoursField() {
     const expenseType = document.getElementById('editExpenseType').value;
     const workHoursGroup = document.getElementById('editWorkHoursGroup');
-    const categorySelect = document.getElementById('editExpenseCategory');
-    const descriptionGroup = document.getElementById('editExpenseDescription').parentElement;
-    const recurringGroup = document.getElementById('editIsRecurring').parentElement;
+    const categoryGroup = document.getElementById('editCategoryGroup');
+    const expenseSubtypeGroup = document.getElementById('editExpenseSubtypeGroup');
+    const recurringGroup = document.getElementById('editRecurringGroup');
     const recurringMonthsGroup = document.getElementById('editRecurringMonths');
+    const editScopeGroup = document.getElementById('editScopeGroup');
+    
     if (expenseType === 'income') {
-      workHoursGroup.style.display = 'block';
-      descriptionGroup.style.display = 'block';
-      document.getElementById('editExpenseDescription').setAttribute('required', 'required');
+      // Income: show category, work hours, hide expense-specific fields
+      if (workHoursGroup) workHoursGroup.style.display = 'block';
+      if (categoryGroup) categoryGroup.style.display = 'block';
+      if (expenseSubtypeGroup) expenseSubtypeGroup.style.display = 'none';
       if (recurringGroup) recurringGroup.style.display = 'none';
       if (recurringMonthsGroup) recurringMonthsGroup.style.display = 'none';
-      categorySelect.innerHTML = `
-            <option value="">בחר קטגוריה</option>
-            <option value="sales">מכירות</option>
-            <option value="other">אחר</option>
-        `;
+      if (editScopeGroup) editScopeGroup.style.display = 'none';
     } else {
-      workHoursGroup.style.display = 'none';
-      descriptionGroup.style.display = 'block';
-      document.getElementById('editExpenseDescription').setAttribute('required', 'required');
+      // Expense: show subtype, hide category
+      if (workHoursGroup) workHoursGroup.style.display = 'none';
+      if (categoryGroup) categoryGroup.style.display = 'none';
+      if (expenseSubtypeGroup) expenseSubtypeGroup.style.display = 'block';
+      const workHoursInput = document.getElementById('editExpenseWorkHours');
+      if (workHoursInput) workHoursInput.value = '';
+      
+      // Show recurring option only for fixed expenses
+      this.toggleEditRecurringBySubtype();
+    }
+  }
+  
+  toggleEditRecurringBySubtype() {
+    const subtypeSelect = document.getElementById('editExpenseSubtype');
+    const recurringGroup = document.getElementById('editRecurringGroup');
+    const recurringMonthsGroup = document.getElementById('editRecurringMonths');
+    const editScopeGroup = document.getElementById('editScopeGroup');
+    const isRecurringCheckbox = document.getElementById('editIsRecurring');
+    
+    if (subtypeSelect && subtypeSelect.value === 'fixed') {
+      // Fixed expense - show recurring option
       if (recurringGroup) recurringGroup.style.display = 'block';
-      document.getElementById('editExpenseWorkHours').value = '';
-      categorySelect.innerHTML = `
-            <option value="">בחר קטגוריה</option>
-            <option value="fixed">הוצאות קבועות</option>
-            <option value="variable">הוצאות משתנות</option>
-            <option value="general">הוצאות כלליות</option>
-            <option value="other">אחר</option>
-        `;
+      // Show edit scope if it's a recurring expense
+      if (isRecurringCheckbox && isRecurringCheckbox.checked && editScopeGroup) {
+        editScopeGroup.style.display = 'block';
+      }
+    } else {
+      // Variable expense - hide recurring option
+      if (recurringGroup) recurringGroup.style.display = 'none';
+      if (recurringMonthsGroup) recurringMonthsGroup.style.display = 'none';
+      if (editScopeGroup) editScopeGroup.style.display = 'none';
+      if (isRecurringCheckbox) isRecurringCheckbox.checked = false;
     }
   }
 
@@ -127,16 +182,39 @@ class ExpenseManager {
     expenses = (await repo.getAll() || []).filter(e => e && typeof e === 'object');
     const exp = expenses.find(e => e.id === id);
     if (!exp) return;
-    console.log('[Expense] showEditExpenseModal', { id, exp, isRecurringOccurrence: exp.type === 'expense' && (exp.recurring || exp.recurrenceGroupId) });
+    
+    const isExpense = exp.type === 'expense';
+    const isRecurringOccurrence = isExpense && (exp.recurring || exp.recurrenceGroupId);
+    
+    console.log('[Expense] showEditExpenseModal', { id, exp, isExpense, isRecurringOccurrence });
+    
+    // Set basic fields
     document.getElementById('editExpenseId').value = exp.id;
     document.getElementById('editExpenseDate').value = exp.date;
     document.getElementById('editExpenseType').value = exp.type;
-    document.getElementById('editExpenseCategory').value = exp.category;
     document.getElementById('editExpenseDescription').value = exp.description || '';
     document.getElementById('editExpenseAmount').value = exp.amount;
-    // For recurring occurrences, ensure proper setup
-    const isRecurringOccurrence = exp.type === 'expense' && (exp.recurring || exp.recurrenceGroupId);
-    document.getElementById('editIsRecurring').checked = isRecurringOccurrence;
+    document.getElementById('editExpenseWorkHours').value = exp.workHours || '';
+    
+    // Set subtype for expenses (fixed/variable)
+    const subtypeSelect = document.getElementById('editExpenseSubtype');
+    if (subtypeSelect && isExpense) {
+      // Use subtype if available, otherwise derive from category or recurring status
+      const subtype = exp.subtype || (exp.category === 'fixed' || isRecurringOccurrence ? 'fixed' : 'variable');
+      subtypeSelect.value = subtype;
+    }
+    
+    // Set category for income
+    const categorySelect = document.getElementById('editExpenseCategory');
+    if (categorySelect && !isExpense) {
+      categorySelect.value = exp.category || '';
+    }
+    
+    // Set recurring checkbox
+    const isRecurringCheckbox = document.getElementById('editIsRecurring');
+    if (isRecurringCheckbox) {
+      isRecurringCheckbox.checked = isRecurringOccurrence;
+    }
     
     // If this is a recurring occurrence, get the actual group size for months count
     let recurringMonthsValue = 1;
@@ -146,52 +224,30 @@ class ExpenseManager {
       recurringMonthsValue = groupEntries.length || parseInt(exp.recurringMonths || 1, 10);
     }
     document.getElementById('editRecurringMonthsCount').value = recurringMonthsValue;
-    document.getElementById('editExpenseWorkHours').value = exp.workHours || '';
+    
+    // Toggle form fields based on type
     this.toggleEditWorkHoursField();
-    // Ensure recurring controls are visible for recurring occurrences
-    if (typeof toggleEditRecurringMonths === 'function') {
-      toggleEditRecurringMonths();
+    
+    // Show edit scope option for recurring expenses
+    const editScopeGroup = document.getElementById('editScopeGroup');
+    if (editScopeGroup) {
+      editScopeGroup.style.display = isRecurringOccurrence ? 'block' : 'none';
     }
+    
     // Force show recurring controls if this is a recurring occurrence
     if (isRecurringOccurrence) {
-      const recurringGroup = document.getElementById('editIsRecurring').parentElement;
+      const recurringGroup = document.getElementById('editRecurringGroup');
       const recurringMonthsGroup = document.getElementById('editRecurringMonths');
       if (recurringGroup) recurringGroup.style.display = 'block';
       if (recurringMonthsGroup) recurringMonthsGroup.style.display = 'block';
     }
     
-    // Preserve the original category selection after toggleEditWorkHoursField runs
-    setTimeout(() => {
-      const categorySelect = document.getElementById('editExpenseCategory');
-      if (categorySelect && exp.category) {
-        // Ensure the original category option exists
-        if (!Array.from(categorySelect.options).some(opt => opt.value === exp.category)) {
-          const categoryMap = {
-            sales: 'מכירות', other: 'אחר', fixed: 'הוצאות קבועות', 
-            variable: 'הוצאות משתנות', general: 'הוצאות כלליות'
-          };
-          const opt = document.createElement('option');
-          opt.value = exp.category;
-          opt.textContent = categoryMap[exp.category] || exp.category;
-          categorySelect.appendChild(opt);
-        }
-        categorySelect.value = exp.category;
-      }
-    }, 0);
-    // Ensure the form submit listener is bound (in case it wasn't during initial setup)
-    const form = document.getElementById('editExpenseForm');
-    if (form) {
-      // Remove any existing listeners and add fresh one
-      form.removeEventListener('submit', window.saveEditedExpense);
-      form.addEventListener('submit', window.saveEditedExpense);
-      console.log('[Expense] Edit form listener bound');
-    }
     openModal('editExpenseModal');
   }
 
   async saveEditedExpense(e) {
     console.log('[Expense] saveEditedExpense CALLED - form submitted');
-    e.preventDefault();
+    if (e) e.preventDefault();
     const form = document.getElementById('editExpenseForm');
     if (form) {
       // Surface HTML5 validation errors to the user if any
@@ -236,43 +292,67 @@ class ExpenseManager {
       opt.value = categoryVal; opt.textContent = categoryVal; opt.selected = true;
       categoryEl.appendChild(opt);
     }
+    const isExpense = expenseType === 'expense';
+    const subtypeSelect = document.getElementById('editExpenseSubtype');
+    const categorySelect = document.getElementById('editExpenseCategory');
+    const editScopeSelect = document.getElementById('editScope');
+    const editScope = editScopeSelect ? editScopeSelect.value : 'single';
+    
     let edited = {
       ...expenses[index],
       type: expenseType,
-      category: document.getElementById('editExpenseCategory').value,
+      // For expenses: use subtype, for income: use category
+      category: isExpense ? (subtypeSelect?.value || 'variable') : (categorySelect?.value || ''),
+      subtype: isExpense ? (subtypeSelect?.value || 'variable') : null,
       description: document.getElementById('editExpenseDescription').value,
       amount: parseFloat(document.getElementById('editExpenseAmount').value),
       date: document.getElementById('editExpenseDate').value,
       recurring: isRecurring,
       recurringMonths: recurringMonths
     };
-    console.log('[Expense] resolved recurringMonths', { isRecurring, rmRaw, recurringMonths });
-    console.log('[Expense] About to process edit logic', { expenseType, changedToIncome: originalExpense.type === 'expense' && expenseType === 'income', turnedOffRecurring: originalExpense.type === 'expense' && originalExpense.recurring && !isRecurring });
+    
+    console.log('[Expense] resolved recurringMonths', { isRecurring, rmRaw, recurringMonths, editScope });
+    
     if (expenseType === 'income') {
       const wh = parseFloat(document.getElementById('editExpenseWorkHours').value) || 0;
       edited.workHours = wh;
       delete edited.recurrenceGroupId;
+      delete edited.subtype;
     } else {
       delete edited.workHours;
     }
+    
     expenses[index] = edited;
-    console.log('[Expense] saveEditedExpense', { originalExpense, edited });
+    console.log('[Expense] saveEditedExpense', { originalExpense, edited, editScope });
+    
     const origGroup = originalExpense.recurrenceGroupId || originalExpense.id;
+    const wasRecurring = originalExpense.type === 'expense' && (originalExpense.recurring || originalExpense.recurrenceGroupId);
     const changedToIncome = originalExpense.type === 'expense' && expenseType === 'income';
     const turnedOffRecurring = originalExpense.type === 'expense' && originalExpense.recurring && !isRecurring;
-    if (changedToIncome || turnedOffRecurring) {
-      console.log('[Expense] Converting to income or turning off recurring');
-      expenses = expenses.filter(exp => (exp.recurrenceGroupId || exp.id) !== origGroup);
-      expenses.push(edited);
-    } else if (expenseType === 'expense' && isRecurring) {
-      console.log('[Expense] Rebuilding recurring expense group');
-      // Ensure group id exists and rebuild the entire group from its base date
-      edited.recurrenceGroupId = edited.recurrenceGroupId || edited.id;
-      this.addRecurringExpenseToFutureMonths(edited);
-    }
+    
     try {
-      await repo.saveAll(expenses);
-      console.log('✅ Expense saved to repository');
+      if (changedToIncome || turnedOffRecurring) {
+        console.log('[Expense] Converting to income or turning off recurring');
+        // Remove old recurring group and add the single edited expense
+        await repo.removeGroup(origGroup);
+        await repo.add(edited);
+        console.log('✅ Expense converted and saved to MongoDB');
+      } else if (isExpense && isRecurring && editScope === 'all') {
+        console.log('[Expense] Editing ALL recurring occurrences');
+        // Rebuild the entire recurring group with new values
+        edited.recurrenceGroupId = edited.recurrenceGroupId || origGroup;
+        await this.addRecurringExpenseToFutureMonths(edited);
+        console.log('✅ All recurring expenses updated in MongoDB');
+      } else if (isExpense && wasRecurring && editScope === 'single') {
+        console.log('[Expense] Editing ONLY this occurrence');
+        // Just update this single occurrence, keep recurrence group intact
+        await repo.update(edited);
+        console.log('✅ Single occurrence updated in MongoDB');
+      } else {
+        // Simple update - just update the single expense
+        await repo.update(edited);
+        console.log('✅ Expense updated in MongoDB');
+      }
     } catch (err) {
       console.error('[Expense] saveEditedExpense error saving', err);
       alert('שגיאה בשמירת העדכון. רענן ונסה שוב.');
@@ -415,11 +495,17 @@ class ExpenseManager {
     console.log('[Expense] loadExpenseData', { year, monthVal, count: filtered.length, totals: { totalIncome, totalExpenses, totalWorkHours } });
   }
 
-  addRecurringExpenseToFutureMonths(expense) {
+  async addRecurringExpenseToFutureMonths(expense) {
+    const repo = window.App.Repositories.ExpenseRepository;
     // Rebuild entire group from the group's base date, applying the updated fields to all
     const groupId = expense.recurrenceGroupId || expense.id;
     expense.recurrenceGroupId = groupId;
-    const groupEntries = (expenses || []).filter(e => e && ((e.recurrenceGroupId || e.id) === groupId));
+    
+    // Get current expenses from repo
+    expenses = await repo.getAll();
+    expenses = (expenses || []).filter(e => e && typeof e === 'object');
+    
+    const groupEntries = expenses.filter(e => e && ((e.recurrenceGroupId || e.id) === groupId));
     // Determine base: prefer item whose id === groupId, else earliest date
     let baseItem = groupEntries.find(e => e && e.id === groupId) || null;
     if (!baseItem && groupEntries.length) {
@@ -434,8 +520,8 @@ class ExpenseManager {
     const baseDay = baseDateObj.getDate();
     const totalOccurrences = Math.max(1, parseInt(expense.recurringMonths || 1, 10));
 
-    // Remove existing group
-    expenses = (expenses || []).filter(e => e && ((e.recurrenceGroupId || e.id) !== groupId));
+    // Remove existing group from MongoDB
+    await repo.removeGroup(groupId);
 
     // Create base (i=0) with id = groupId to preserve main id
     const baseDateString = new Date(baseYear, baseMonth, baseDay).toISOString().split('T')[0];
@@ -447,7 +533,7 @@ class ExpenseManager {
       recurring: true,
       recurrenceGroupId: groupId
     };
-    expenses.push(baseExpense);
+    await repo.add(baseExpense);
 
     // Create future occurrences
     for (let i = 1; i < totalOccurrences; i++) {
@@ -455,15 +541,15 @@ class ExpenseManager {
       const futureDateString = futureDate.toISOString().split('T')[0];
       const futureExpense = {
         ...expense,
-        id: Date.now() + Math.random() * 1000 + i,
+        id: Date.now() + Math.floor(Math.random() * 1000) + i,
         date: futureDateString,
         type: 'expense',
         recurring: true,
         recurrenceGroupId: groupId
       };
-      expenses.push(futureExpense);
+      await repo.add(futureExpense);
     }
-    console.log('[Expense] rebuild recurring group', { groupId, totalOccurrences, baseDate: baseDateString });
+    console.log('✅ Recurring expenses added to MongoDB', { groupId, totalOccurrences, baseDate: baseDateString });
   }
 }
 

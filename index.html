@@ -348,7 +348,7 @@
                                 <th>קולקציה</th>
                                 <th>סה"כ הוצאות</th>
                                 <th>מחיר מינימלי מומלץ (30%)</th>
-                                <th>מחיר לפני הנחה</th>
+                                <th class="site-price-header">💰 מחיר באתר</th>
                                 <th>מחיר אחרי הנחה</th>
                                 <th>רווח (₪)</th>
                                 <th>רווח (%)</th>
@@ -435,20 +435,26 @@
             <form id="addExpenseForm">
                 <div class="form-group">
                     <label>סוג:</label>
-                    <select id="expenseType" required>
+                    <select id="expenseType" required onchange="toggleWorkHoursField()">
                         <option value="income">הכנסה</option>
                         <option value="expense">הוצאה</option>
                     </select>
                 </div>
-                <div class="form-group">
+                <!-- For Income: Category selection -->
+                <div class="form-group" id="categoryGroup">
                     <label>קטגוריה:</label>
-                    <select id="expenseCategory" required>
+                    <select id="expenseCategory">
                         <option value="">בחר קטגוריה</option>
-                        <option value="fixed">הוצאות קבועות</option>
-                        <option value="variable">הוצאות משתנות</option>
-                        <option value="general">הוצאות כלליות</option>
                         <option value="sales">מכירות</option>
                         <option value="other">אחר</option>
+                    </select>
+                </div>
+                <!-- For Expense: Fixed/Variable selection -->
+                <div class="form-group" id="expenseSubtypeGroup" style="display: none;">
+                    <label>סוג הוצאה:</label>
+                    <select id="expenseSubtype" onchange="toggleRecurringBySubtype()">
+                        <option value="fixed">הוצאה קבועה</option>
+                        <option value="variable">הוצאה משתנה</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -467,19 +473,19 @@
                     <label>שעות עבודה:</label>
                     <input type="number" id="expenseWorkHours" min="0" step="0.5" placeholder="הכנס מספר שעות">
                 </div>
-                <div class="form-group">
+                <div class="form-group" id="recurringGroup" style="display: none;">
                     <label>
-                        <input type="checkbox" id="isRecurring">
+                        <input type="checkbox" id="isRecurring" onchange="toggleRecurringMonths()">
                         הוצאה חוזרת חודשית
                     </label>
                 </div>
                 <div class="form-group" id="recurringMonths" style="display: none;">
                     <label>מספר חודשים לחזרה:</label>
-                    <input type="number" id="recurringMonthsCount" min="1" max="12" value="12">
+                    <input type="number" id="recurringMonthsCount" min="1" max="24" value="12">
                 </div>
                 <div class="modal-footer">
                     <button type="button" onclick="closeModal('addExpenseModal')" class="btn-secondary">ביטול</button>
-                    <button type="submit">הוסף</button>
+                    <button type="button" onclick="addExpense(event)">הוסף</button>
                 </div>
             </form>
         </div>
@@ -492,20 +498,26 @@
                 <input type="hidden" id="editExpenseId">
                 <div class="form-group">
                     <label>סוג:</label>
-                    <select id="editExpenseType" required>
+                    <select id="editExpenseType" required onchange="toggleEditWorkHoursField()">
                         <option value="income">הכנסה</option>
                         <option value="expense">הוצאה</option>
                     </select>
                 </div>
-                <div class="form-group">
+                <!-- For Income: Category selection -->
+                <div class="form-group" id="editCategoryGroup">
                     <label>קטגוריה:</label>
-                    <select id="editExpenseCategory" required>
+                    <select id="editExpenseCategory">
                         <option value="">בחר קטגוריה</option>
-                        <option value="fixed">הוצאות קבועות</option>
-                        <option value="variable">הוצאות משתנות</option>
-                        <option value="general">הוצאות כלליות</option>
                         <option value="sales">מכירות</option>
                         <option value="other">אחר</option>
+                    </select>
+                </div>
+                <!-- For Expense: Fixed/Variable selection -->
+                <div class="form-group" id="editExpenseSubtypeGroup" style="display: none;">
+                    <label>סוג הוצאה:</label>
+                    <select id="editExpenseSubtype" onchange="toggleEditRecurringBySubtype()">
+                        <option value="fixed">הוצאה קבועה</option>
+                        <option value="variable">הוצאה משתנה</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -524,19 +536,27 @@
                     <label>שעות עבודה:</label>
                     <input type="number" id="editExpenseWorkHours" min="0" step="0.5" placeholder="הכנס מספר שעות">
                 </div>
-                <div class="form-group">
+                <div class="form-group" id="editRecurringGroup" style="display: none;">
                     <label>
-                        <input type="checkbox" id="editIsRecurring">
+                        <input type="checkbox" id="editIsRecurring" onchange="toggleEditRecurringMonths()">
                         הוצאה חוזרת חודשית
                     </label>
                 </div>
                 <div class="form-group" id="editRecurringMonths" style="display: none;">
                     <label>מספר חודשים לחזרה:</label>
-                    <input type="number" id="editRecurringMonthsCount" min="1" max="12" value="12">
+                    <input type="number" id="editRecurringMonthsCount" min="1" max="24" value="12">
+                </div>
+                <!-- Edit scope options for recurring expenses -->
+                <div class="form-group" id="editScopeGroup" style="display: none;">
+                    <label>החל שינויים על:</label>
+                    <select id="editScope">
+                        <option value="single">רק רשומה זו</option>
+                        <option value="all">כל החזרות</option>
+                    </select>
                 </div>
                 <div class="modal-footer">
                     <button type="button" onclick="closeModal('editExpenseModal')" class="btn-secondary">ביטול</button>
-                    <button type="submit">עדכן</button>
+                    <button type="button" onclick="saveEditedExpense(event)">עדכן</button>
                 </div>
             </form>
         </div>
@@ -880,12 +900,17 @@
         ];
 
         function getSettingsSafe(){
-          try { if (window.App?.SettingsService?.get) return App.SettingsService.get(); } catch{}
+          // Use localStorage directly for sync access - MongoDB data is synced to localStorage
           try { return JSON.parse(localStorage.getItem('settings') || '{}'); } catch { return {}; }
         }
 
-        function setSettingsSafe(s){
-          if (window.App?.SettingsService?.set) App.SettingsService.set(s); else localStorage.setItem('settings', JSON.stringify(s||{}));
+        async function setSettingsSafe(s){
+          if (window.App?.SettingsService?.set) {
+            await App.SettingsService.set(s);
+            console.log('✅ Settings saved to MongoDB');
+          } else {
+            localStorage.setItem('settings', JSON.stringify(s||{}));
+          }
         }
 
         // Data migration to new structure (subcategories => objects with items, allow category-level items)
@@ -1021,7 +1046,7 @@
           return __categoriesDraft || ensureDefaultCategories();
         }
 
-        function commitCategories(){
+        async function commitCategories(){
           if (!__categoriesDraft) return;
           
           // Get current categories before saving changes
@@ -1030,7 +1055,7 @@
           
           // Save new categories
           s.categories = normalize(__categoriesDraft);
-          setSettingsSafe(s);
+          await setSettingsSafe(s);
           
           // Detect which categories changed (added, removed, or modified)
           const changedCategories = detectChangedCategories(oldCategories, s.categories);
