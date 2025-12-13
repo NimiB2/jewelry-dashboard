@@ -148,7 +148,20 @@ class ProductManager {
             <td>${collectionsText}</td>
             <td title="עלות מחושבת דינמית על בסיס ההגדרות הנוכחיות">₪${currentCost.toFixed(2)}</td>
             <td title="מחיר מינימלי לרווח של 30%" style="background-color: #e8f5e8; font-weight: bold;">₪${recommendedMinPrice.toFixed(2)}</td>
-            <td class="site-price-cell" title="מחיר באתר">₪${originalPrice.toFixed(2)}</td>
+            <td class="site-price-cell">
+              <div style="display: flex; align-items: center; gap: 3px;">
+                <input type="number" 
+                       class="inline-price-input" 
+                       data-product-id="${p.id}" 
+                       data-original-price="${originalPrice.toFixed(0)}"
+                       value="${originalPrice.toFixed(0)}" 
+                       min="0" 
+                       step="1"
+                       style="width: 70px; padding: 4px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; text-align: center;">
+                <button class="quick-save-btn" data-product-id="${p.id}" title="שמור" style="padding: 3px 6px; background: #28a745; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 11px; display: none;">✓</button>
+                <button class="quick-cancel-btn" data-product-id="${p.id}" data-original="${originalPrice.toFixed(0)}" title="בטל" style="padding: 3px 6px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 11px; display: none;">✗</button>
+              </div>
+            </td>
             <td>₪${discountedPrice.toFixed(2)}</td>
             <td style="color: ${profitAmount >= 0 ? 'green' : 'red'}">₪${profitAmount.toFixed(2)}</td>
             <td style="color: ${isLowProfit ? '#f44336' : (profitPercent >= 0 ? 'green' : 'red')}; font-weight: ${isLowProfit ? 'bold' : 'normal'}">${profitPercent.toFixed(1)}% ${isLowProfit ? '⚠️' : ''}</td>
@@ -158,6 +171,89 @@ class ProductManager {
             </td>
         `;
     });
+    
+    // Set up click handlers for editable price cells
+    this.setupPriceEditHandlers();
+  }
+
+  setupPriceEditHandlers() {
+    // Handle save buttons
+    document.querySelectorAll('.quick-save-btn').forEach(btn => {
+      btn.onclick = async (e) => {
+        e.stopPropagation();
+        const productId = parseInt(btn.dataset.productId);
+        const input = document.querySelector(`.inline-price-input[data-product-id="${productId}"]`);
+        if (input) {
+          await this.saveInlinePrice(productId, parseFloat(input.dataset.originalPrice), parseFloat(input.value));
+        }
+      };
+    });
+    
+    // Handle cancel buttons
+    document.querySelectorAll('.quick-cancel-btn').forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const productId = btn.dataset.productId;
+        const originalPrice = btn.dataset.original;
+        const input = document.querySelector(`.inline-price-input[data-product-id="${productId}"]`);
+        const saveBtn = document.querySelector(`.quick-save-btn[data-product-id="${productId}"]`);
+        if (input) {
+          input.value = originalPrice;
+        }
+        // Hide both buttons
+        btn.style.display = 'none';
+        if (saveBtn) saveBtn.style.display = 'none';
+      };
+    });
+    
+    // Handle input changes and Enter key
+    document.querySelectorAll('.inline-price-input').forEach(input => {
+      const productId = input.dataset.productId;
+      const saveBtn = document.querySelector(`.quick-save-btn[data-product-id="${productId}"]`);
+      const cancelBtn = document.querySelector(`.quick-cancel-btn[data-product-id="${productId}"]`);
+      
+      // Show/hide buttons on input change
+      input.oninput = () => {
+        const hasChanged = input.value !== input.dataset.originalPrice;
+        if (saveBtn) saveBtn.style.display = hasChanged ? 'inline-block' : 'none';
+        if (cancelBtn) cancelBtn.style.display = hasChanged ? 'inline-block' : 'none';
+      };
+      
+      input.onkeydown = async (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const productId = parseInt(input.dataset.productId);
+          await this.saveInlinePrice(productId, parseFloat(input.dataset.originalPrice), parseFloat(input.value));
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          input.value = input.dataset.originalPrice;
+          if (saveBtn) saveBtn.style.display = 'none';
+          if (cancelBtn) cancelBtn.style.display = 'none';
+        }
+      };
+    });
+  }
+  
+  async saveInlinePrice(productId, originalPrice, newPrice) {
+    if (newPrice === originalPrice) return; // No change
+    
+    const repo = window.App.Repositories.ProductRepository;
+    products = await repo.getAll();
+    const product = products.find(p => p.id === productId);
+    
+    if (!product) {
+      alert('מוצר לא נמצא');
+      return;
+    }
+    
+    // Save directly
+    product.sitePrice = newPrice;
+    await repo.saveAll(products);
+    console.log('✅ Price updated:', product.name, '→', newPrice);
+    
+    // Show notification and reload
+    this.showPriceUpdateNotification(product.name, originalPrice, newPrice);
+    await this.loadProducts();
   }
 
   updateCollectionsFilter() {
@@ -697,6 +793,130 @@ class ProductManager {
     } else {
       console.log('⏭️ Skipping products refresh - changes do not affect existing products');
     }
+  }
+
+  // Quick price editing directly in the table
+  startQuickPriceEdit(productId, currentPrice, cell) {
+    // Prevent multiple edits
+    if (cell.querySelector('input')) return;
+    
+    // Create edit container
+    const container = document.createElement('div');
+    container.style.cssText = 'display: flex; align-items: center; gap: 5px;';
+    
+    // Create input
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.className = 'quick-price-input';
+    input.value = currentPrice.toFixed(2);
+    input.min = '0';
+    input.step = '0.01';
+    input.style.cssText = 'width: 80px; padding: 4px; border: 2px solid #667eea; border-radius: 4px; font-size: 14px;';
+    input.onclick = (e) => e.stopPropagation();
+    input.onkeydown = (e) => this.handleQuickPriceKeydown(e, productId, currentPrice);
+    
+    // Create save button
+    const saveBtn = document.createElement('button');
+    saveBtn.textContent = '✓';
+    saveBtn.style.cssText = 'padding: 4px 8px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;';
+    saveBtn.onclick = (e) => { e.stopPropagation(); this.saveQuickPrice(productId, currentPrice); };
+    
+    // Create cancel button
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = '✗';
+    cancelBtn.style.cssText = 'padding: 4px 8px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;';
+    cancelBtn.onclick = (e) => { e.stopPropagation(); this.loadProducts(); };
+    
+    container.appendChild(input);
+    container.appendChild(saveBtn);
+    container.appendChild(cancelBtn);
+    
+    // Clear cell and add container
+    cell.innerHTML = '';
+    cell.appendChild(container);
+    
+    // Focus on input
+    input.focus();
+    input.select();
+  }
+
+  handleQuickPriceKeydown(event, productId, originalPrice) {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      this.saveQuickPrice(productId, originalPrice);
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      this.loadProducts(); // Reload to restore original state
+    }
+  }
+
+  async saveQuickPrice(productId, originalPrice) {
+    const input = document.querySelector('.quick-price-input');
+    if (!input) return;
+    
+    const newPrice = parseFloat(input.value) || 0;
+    
+    // If no change, just reload
+    if (newPrice === originalPrice) {
+      await this.loadProducts();
+      return;
+    }
+    
+    // Find product
+    const repo = window.App.Repositories.ProductRepository;
+    products = await repo.getAll();
+    const product = products.find(p => p.id === productId);
+    
+    if (!product) {
+      alert('מוצר לא נמצא');
+      await this.loadProducts();
+      return;
+    }
+    
+    // Save directly without confirmation for faster workflow
+    product.sitePrice = newPrice;
+    await repo.saveAll(products);
+    console.log('✅ Price updated:', product.name, '→', newPrice);
+    
+    // Show success notification
+    this.showPriceUpdateNotification(product.name, originalPrice, newPrice);
+    
+    // Reload products
+    await this.loadProducts();
+  }
+
+  cancelQuickPriceEdit(cell, originalHTML) {
+    cell.innerHTML = originalHTML;
+  }
+
+  showPriceUpdateNotification(productName, oldPrice, newPrice) {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      background: #28a745;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      z-index: 10000;
+      font-size: 14px;
+      direction: rtl;
+      animation: slideIn 0.3s ease;
+    `;
+    notification.innerHTML = `
+      <strong>✅ המחיר עודכן</strong><br>
+      ${productName}: ₪${oldPrice.toFixed(2)} → ₪${newPrice.toFixed(2)}
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+      notification.style.opacity = '0';
+      notification.style.transition = 'opacity 0.3s';
+      setTimeout(() => notification.remove(), 300);
+    }, 3000);
   }
 }
 

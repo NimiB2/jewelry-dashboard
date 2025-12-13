@@ -1031,6 +1031,33 @@ tbody tr:hover {
     font-weight: 700 !important;
     color: #111 !important;
     font-size: 1.1em !important;
+    transition: all 0.2s ease;
+}
+
+.site-price-cell:hover {
+    background: #e3f2fd !important;
+    box-shadow: inset 0 0 0 2px #667eea;
+}
+
+.site-price-cell:hover .edit-hint {
+    color: #667eea !important;
+}
+
+.site-price-cell .edit-hint {
+    opacity: 0.3;
+    font-size: 12px;
+    margin-right: 5px;
+    transition: opacity 0.2s ease;
+}
+
+.site-price-cell:hover .edit-hint {
+    opacity: 1;
+}
+
+/* Editable price cell styling */
+.editable-price {
+    cursor: pointer;
+    position: relative;
 }
 
 /* FAB - Scroll to Top */

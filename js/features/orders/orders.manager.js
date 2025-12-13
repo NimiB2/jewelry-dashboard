@@ -311,9 +311,74 @@ class OrderManager {
         // Clear discount fields when hiding
         const finalPaidInput = document.getElementById('finalPaidAmount');
         const discountReasonInput = document.getElementById('discountReason');
+        const discountPercentInput = document.getElementById('discountPercent');
         if (finalPaidInput) finalPaidInput.value = '';
         if (discountReasonInput) discountReasonInput.value = '';
+        if (discountPercentInput) discountPercentInput.value = '';
+        document.getElementById('calculatedFinalPrice').textContent = '';
       }
+    }
+  }
+
+  // Toggle between discount type (amount vs percent)
+  toggleDiscountType(type) {
+    const amountGroup = document.getElementById('discountAmountGroup');
+    const percentGroup = document.getElementById('discountPercentGroup');
+    
+    if (type === 'amount') {
+      amountGroup.style.display = 'block';
+      percentGroup.style.display = 'none';
+    } else {
+      amountGroup.style.display = 'none';
+      percentGroup.style.display = 'block';
+      // Recalculate if there's already a percent value
+      this.calculateFromPercent();
+    }
+  }
+
+  // Calculate final price from percentage discount
+  calculateFromPercent() {
+    const percentInput = document.getElementById('discountPercent');
+    const calculatedAmountInput = document.getElementById('calculatedAmount');
+    const calculatedFinalPriceDiv = document.getElementById('calculatedFinalPrice');
+    const finalPaidInput = document.getElementById('finalPaidAmount');
+    
+    const percent = parseFloat(percentInput?.value) || 0;
+    const originalAmount = parseFloat(calculatedAmountInput?.value) || 0;
+    
+    if (percent > 0 && originalAmount > 0) {
+      const finalPrice = originalAmount * (1 - percent / 100);
+      const discountAmount = originalAmount - finalPrice;
+      calculatedFinalPriceDiv.innerHTML = `💰 מחיר סופי: <strong>₪${finalPrice.toFixed(2)}</strong> (חיסכון: ₪${discountAmount.toFixed(2)})`;
+      calculatedFinalPriceDiv.style.display = 'block';
+      // Also update the hidden final paid amount for saving
+      if (finalPaidInput) finalPaidInput.value = finalPrice.toFixed(2);
+    } else {
+      calculatedFinalPriceDiv.style.display = 'none';
+      calculatedFinalPriceDiv.innerHTML = '';
+    }
+  }
+
+  // Update discount display when amount changes
+  updateDiscountDisplay() {
+    // This is called when the user types in the final paid amount
+    // No action needed here, the value is already in the input
+  }
+
+  // Get the final amount considering discount type
+  getFinalAmount() {
+    const hasDiscount = document.getElementById('hasDiscount')?.checked;
+    const calculatedAmount = parseFloat(document.getElementById('calculatedAmount')?.value) || 0;
+    
+    if (!hasDiscount) return calculatedAmount;
+    
+    const discountType = document.querySelector('input[name="discountType"]:checked')?.value || 'amount';
+    
+    if (discountType === 'percent') {
+      const percent = parseFloat(document.getElementById('discountPercent')?.value) || 0;
+      return calculatedAmount * (1 - percent / 100);
+    } else {
+      return parseFloat(document.getElementById('finalPaidAmount')?.value) || calculatedAmount;
     }
   }
   async loadOrders() {
@@ -630,9 +695,7 @@ class OrderManager {
     }, 0);
     
     const hasDiscount = document.getElementById('hasDiscount').checked;
-    const finalPaidAmount = hasDiscount ? 
-      parseFloat(document.getElementById('finalPaidAmount').value) || calculatedAmount :
-      calculatedAmount;
+    const finalPaidAmount = hasDiscount ? this.getFinalAmount() : calculatedAmount;
     
     // Create products summary string
     const productsString = this.selectedProducts.map(p => 
@@ -857,8 +920,10 @@ class OrderManager {
       order.status = nextStatus.key;
       
       // Add income when order status changes to "paid_preparing" (customer paid)
-      if (oldStatus === 'new' && nextStatus.key === 'paid_preparing') {
-        console.log('💰 Order paid - adding to income:', order.number);
+      // Also handle undefined/null status as 'new' (for older orders)
+      const wasUnpaid = oldStatus === 'new' || !oldStatus;
+      if (wasUnpaid && nextStatus.key === 'paid_preparing') {
+        console.log('💰 Order paid - adding to income:', order.number, '(old status:', oldStatus, ')');
         await this.addOrderToIncome(order);
       }
       
@@ -1262,13 +1327,17 @@ class OrderManager {
   // Update income entry when order is updated
   async updateOrderIncome(order) {
     try {
-      const expenseRepo = window.App?.Repositories?.ExpenseRepository;
-      if (!expenseRepo) return;
+      // Use IncomeRepository (not ExpenseRepository) for income entries
+      const incomeRepo = window.App?.Repositories?.IncomeRepository;
+      if (!incomeRepo) {
+        console.warn('⚠️ IncomeRepository not available');
+        return;
+      }
       
-      let expenses = await expenseRepo.getAll();
+      let incomeList = await incomeRepo.getAll();
       
       // Find existing income entry for this order
-      const existingIndex = expenses.findIndex(e => 
+      const existingIndex = incomeList.findIndex(e => 
         e.orderId === order.id || e.orderNumber === order.number
       );
       
@@ -1288,7 +1357,7 @@ class OrderManager {
       
       // Update the existing entry
       const updatedEntry = {
-        ...expenses[existingIndex],
+        ...incomeList[existingIndex],
         date: order.date,
         description: productsDescription,
         amount: order.finalAmount || order.amount,
@@ -1296,7 +1365,7 @@ class OrderManager {
         updatedAt: new Date().toISOString()
       };
       
-      await expenseRepo.update(updatedEntry);
+      await incomeRepo.update(updatedEntry);
       console.log('✅ Income entry updated for order:', order.number);
       
     } catch (error) {
@@ -1363,3 +1432,6 @@ class OrderManager {
 }
 
 window.App.Managers.orderManager = new OrderManager();
+
+// Global shorthand for HTML onclick handlers
+window.orderManager = window.App.Managers.orderManager;
