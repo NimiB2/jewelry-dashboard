@@ -11,6 +11,7 @@ const ordersRouter = require('./api/routes/orders');
 const expensesRouter = require('./api/routes/expenses');
 const incomeRouter = require('./api/routes/income');
 const settingsRouter = require('./api/routes/settings');
+const quotesRouter = require('./api/routes/quotes');
 const { isAuthenticated, login } = require('./middleware/auth');
 
 const app = express();
@@ -40,6 +41,7 @@ if (useAuth) {
     app.use('/api/expenses', isAuthenticated, expensesRouter);
     app.use('/api/income', isAuthenticated, incomeRouter);
     app.use('/api/settings', isAuthenticated, settingsRouter);
+    app.use('/api/quotes', isAuthenticated, quotesRouter);
 } else {
     console.log('⚠️  Authentication disabled');
     app.use('/api/products', productsRouter);
@@ -47,6 +49,7 @@ if (useAuth) {
     app.use('/api/expenses', expensesRouter);
     app.use('/api/income', incomeRouter);
     app.use('/api/settings', settingsRouter);
+    app.use('/api/quotes', quotesRouter);
 }
 
 // Health check endpoint (protected if auth enabled)

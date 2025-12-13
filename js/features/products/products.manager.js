@@ -124,7 +124,7 @@ class ProductManager {
       
       // Calculate pricing with discount using dynamic cost calculation
       const currentCost = this.calculateDynamicCost(p); // Use dynamic cost based on current settings
-      const recommendedMinPrice = currentCost / 0.7; // 30% profit minimum (cost / 0.7 = price with 30% profit)
+      const recommendedMinPrice = currentCost * 1.3; // Fixed 30% profit markup
       const originalPrice = p.sitePrice || p.price || 0;
       const discountedPrice = originalPrice * (1 - discountPercent / 100);
       const profitAmount = discountedPrice - currentCost;
@@ -231,6 +231,7 @@ class ProductManager {
       document.getElementById('editProductMaterial').value = product.material;
       document.getElementById('editProductWeight').value = product.weight || 0;
       document.getElementById('editProductSitePrice').value = product.sitePrice;
+      document.getElementById('editAdditionalWorkHours').value = product.additionalWorkHours || 0;
       
       // Setup collections checklist for edit
       this.renderEditCollectionsChecklist(product.collections || ['כללי']);
@@ -287,6 +288,7 @@ class ProductManager {
       const newType = document.getElementById('editProductType').value;
       
       // Build updated product object
+      const additionalWorkHours = parseFloat(document.getElementById('editAdditionalWorkHours').value) || 0;
       const updatedProduct = {
         ...products[index],
         id: id, // Ensure ID is preserved
@@ -296,6 +298,7 @@ class ProductManager {
         weight: newWeight,
         sitePrice: newSitePrice,
         laborTime: this.getLaborTimeForMaterial(newMaterial),
+        additionalWorkHours: additionalWorkHours,
         additions,
         collections,
         updatedAt: new Date().toISOString()
@@ -516,7 +519,9 @@ class ProductManager {
     const generalExpenses = materialCost + additionsSum + jewelryPricingConstants;
 
     const laborTime = this.getLaborTimeForMaterial(material);
-    const laborCost = laborTime * this.getLaborHourRate();
+    const additionalWorkHours = parseFloat(document.getElementById('editAdditionalWorkHours')?.value) || 0;
+    const totalLaborTime = laborTime + additionalWorkHours;
+    const laborCost = totalLaborTime * this.getLaborHourRate();
     const workAndExpenses = generalExpenses + laborCost;
 
     // Step D: Apply combined fees multiplier for consistency with main calculator
@@ -563,14 +568,8 @@ class ProductManager {
         : (this.getPackagingTotal() + this.getDomesticShipping());
       const generalExpenses = materialCost + additionsSum + jewelryPricingConstants;
 
-      // Step C: Work and expenses (MIXED - current labor rate, but stored labor time)
-      // Use stored labor time if available, otherwise calculate from current settings
-      let laborTime;
-      if (product.laborTime !== undefined) {
-        laborTime = product.laborTime; // Use stored labor time
-      } else {
-        laborTime = this.getLaborTimeForMaterial(product.material); // Fallback to current settings
-      }
+      // Step C: Work and expenses (DYNAMIC - current labor rate AND current labor time from settings)
+      const laborTime = this.getLaborTimeForMaterial(product.material); // Always use current settings
       const laborCost = laborTime * this.getLaborHourRate(); // Current labor rate
       const workAndExpenses = generalExpenses + laborCost;
 
@@ -675,7 +674,9 @@ class ProductManager {
     const affectingCategories = [
       'עמלות', // Fees (VAT, clearing fee, fixed expenses fee)
       'קבועי תמחור תכשיטים', // Jewelry pricing constants
-      'חומרים – עלויות ועבודה' // Materials and labor (material prices, labor hour rate)
+      'חומרים – עלויות ועבודה', // Materials and labor (material prices, labor hour rate)
+      'מכפילי רווח', // Profit multipliers
+      'יחסי המרה' // Conversion ratios
     ];
     
     console.log('🎯 Categories that affect products:', affectingCategories);

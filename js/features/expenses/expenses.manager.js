@@ -45,6 +45,8 @@ class ExpenseManager {
       if (newEntry.type === 'income') {
         const workHours = parseFloat(document.getElementById('expenseWorkHours').value) || 0;
         newEntry.workHours = workHours;
+        // Store current labor hour rate with income entry (locked at creation time)
+        newEntry.laborHourRate = window.getLaborHourRate ? window.getLaborHourRate() : (settings?.laborHourRate || 80);
       }
       
       if (newEntry.type === 'expense' && newEntry.recurring) {
@@ -495,6 +497,13 @@ class ExpenseManager {
       };
       const categoryLabel = categoryMap[exp.category] || exp.category;
       const workHoursDisplay = exp.type === 'income' ? (exp.workHours || 0) : '';
+      // Calculate salary for this entry using stored rate
+      let salaryDisplay = '';
+      if (exp.type === 'income' && exp.workHours) {
+        const rate = exp.laborHourRate !== undefined ? exp.laborHourRate : (settings?.laborHourRate || 80);
+        const salary = exp.workHours * rate;
+        salaryDisplay = formatILS(salary);
+      }
       row.innerHTML = `
             <td>${formattedDate}</td>
             <td>${exp.type === 'income' ? 'הכנסה' : 'הוצאה'}</td>
@@ -502,6 +511,7 @@ class ExpenseManager {
             <td>${exp.description || ''}</td>
             <td>${formatILS(exp.amount)}</td>
             <td>${workHoursDisplay}</td>
+            <td style="color: #666; font-size: 0.9em;">${salaryDisplay}</td>
             <td>${exp.recurring ? 'כן' : 'לא'}</td>
             <td class="action-buttons">
                 <button class="btn-small btn-warning" onclick="showEditExpenseModal('${String(exp.id)}')">ערוך</button>
@@ -514,7 +524,16 @@ class ExpenseManager {
         totalExpenses += exp.amount;
       }
     });
-    const totalSalary = totalWorkHours * settings.laborHourRate;
+    // Calculate salary using stored laborHourRate for each income entry
+    // This ensures settings changes don't affect already-calculated salaries
+    let totalSalary = 0;
+    filtered.forEach(exp => {
+      if (exp && exp.type === 'income' && exp.workHours) {
+        // Use stored rate if available, otherwise use current settings (for old entries)
+        const rate = exp.laborHourRate !== undefined ? exp.laborHourRate : (settings?.laborHourRate || 80);
+        totalSalary += exp.workHours * rate;
+      }
+    });
     const salaryEl = document.getElementById('totalSalaryFromHours');
     const incomeEl = document.getElementById('totalIncome');
     const expensesEl = document.getElementById('totalExpenses');

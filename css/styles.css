@@ -34,6 +34,39 @@ body {
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
 }
 
+.header h1#headerQuote {
+    font-size: 1.6em;
+    padding: 18px 30px;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-radius: 15px;
+    display: inline-block;
+    max-width: 85%;
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    animation: gentleFloat 4s ease-in-out infinite;
+    line-height: 1.5;
+}
+
+@keyframes gentleFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+}
+
+.daily-quote-label {
+    font-size: 0.9em;
+    color: rgba(255, 255, 255, 0.85);
+    margin-bottom: 10px;
+    letter-spacing: 2px;
+    font-weight: 500;
+}
+
+.header-subtitle {
+    font-size: 0.85em;
+    color: rgba(255, 255, 255, 0.7);
+    margin-top: 15px;
+}
+
+
 .settings-btn {
     position: absolute;
     top: 20px;
@@ -984,4 +1017,38 @@ tbody tr:hover {
     font-weight: 700 !important;
     color: #111 !important;
     font-size: 1.1em !important;
+}
+
+/* FAB - Scroll to Top */
+.fab-scroll-top {
+    position: fixed;
+    bottom: 30px;
+    left: 30px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    cursor: pointer;
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(20px);
+    transition: all 0.3s ease;
+    z-index: 9999;
+}
+
+.fab-scroll-top:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+}
+
+.fab-scroll-top.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
 }

@@ -865,24 +865,12 @@ function findItemValueInCategory(cat, itemName) {
 
 function getMaterialPricePerGram(materialLabel) {
     const settingsObj = getSettingsObject();
-    console.log('getMaterialPricePerGram DEBUG:', { 
-        materialLabel, 
-        settingsObj: settingsObj,
-        materialPrices: settingsObj?.materialPrices,
-        globalSettings: window.settings?.materialPrices,
-        fullSettingsObj: settingsObj
-    });
     
     // Try to find the material price in the settings structure
     let price = 0;
     
-    // First try direct lookup
-    if (settingsObj?.materialPrices?.[materialLabel]) {
-        price = Number(settingsObj.materialPrices[materialLabel]);
-        console.log('Found in materialPrices:', price);
-    }
-    // Try in categories structure
-    else if (settingsObj?.categories) {
+    // FIRST try categories structure (new dynamic settings)
+    if (settingsObj?.categories) {
         const materialCategory = settingsObj.categories.find(cat => 
             cat.name === 'חומרים – עלויות ועבודה'
         );
@@ -896,96 +884,80 @@ function getMaterialPricePerGram(materialLabel) {
                 );
                 if (materialItem) {
                     price = Number(materialItem.value);
-                    console.log('Found in categories structure:', price);
+                    console.log('getMaterialPricePerGram: Found in categories:', materialLabel, '=', price);
+                    return price;
                 }
             }
         }
     }
     
-    console.log('Final price:', price);
+    // Fallback to old direct lookup structure
+    if (settingsObj?.materialPrices?.[materialLabel]) {
+        price = Number(settingsObj.materialPrices[materialLabel]);
+        console.log('getMaterialPricePerGram: Found in old materialPrices:', materialLabel, '=', price);
+    }
+    
     return price;
 }
 
 function getLaborTimeForMaterial(materialLabel) {
     const settingsObj = getSettingsObject();
-    console.log('getLaborTimeForMaterial DEBUG:', { 
-        materialLabel, 
-        settingsObj: settingsObj,
-        laborTime: settingsObj?.laborTime,
-        globalSettings: window.settings?.laborTime
-    });
     
     // Try to find the labor time in the settings structure
     let time = 0;
     
-    // First try direct lookup
-    if (settingsObj?.laborTime?.[materialLabel]) {
-        time = Number(settingsObj.laborTime[materialLabel]);
-        console.log('Found in laborTime:', time);
-    }
-    // Try in categories structure
-    else if (settingsObj?.categories) {
+    // FIRST try categories structure (new dynamic settings)
+    if (settingsObj?.categories) {
         const materialCategory = settingsObj.categories.find(cat => 
             cat.name === 'חומרים – עלויות ועבודה'
         );
         if (materialCategory) {
-            // Debug: show all subcategories
-            console.log('Material category subcategories:', materialCategory.subcategories?.map(sub => ({
-                name: sub.name,
-                items: sub.items?.map(item => item.name)
-            })));
-            
             const timeSubcat = materialCategory.subcategories?.find(sub => 
+                sub.name === 'זמן עבודה (שעות)' || 
                 sub.name === 'זמן עבודה לחומר (שעות)' || 
-                sub.name === 'זמן עבודה' ||
-                sub.name.includes('זמן')
+                sub.name.includes('זמן עבודה')
             );
             if (timeSubcat) {
-                console.log('Found time subcategory:', timeSubcat.name, timeSubcat.items);
                 const materialItem = timeSubcat.items?.find(item => 
                     item.name === materialLabel
                 );
                 if (materialItem) {
                     time = Number(materialItem.value);
-                    console.log('Found labor time in categories structure:', time);
+                    console.log('getLaborTimeForMaterial: Found in categories:', materialLabel, '=', time);
+                    return time;
                 }
             }
         }
     }
     
-    console.log('Final labor time:', time);
+    // Fallback to old direct lookup structure
+    if (settingsObj?.laborTime?.[materialLabel]) {
+        time = Number(settingsObj.laborTime[materialLabel]);
+        console.log('getLaborTimeForMaterial: Found in old laborTime:', materialLabel, '=', time);
+    }
+    
     return time;
 }
 
 function getProfitMultiplier(materialLabel) {
     const settingsObj = getSettingsObject();
-    console.log('getProfitMultiplier DEBUG:', { 
-        materialLabel, 
-        profitMultiplier: settingsObj?.profitMultiplier,
-        globalSettings: window.settings?.profitMultiplier
-    });
     
     // Try to find the profit multiplier in the settings structure
     let multiplier = 1;
     
-    // First try direct lookup
-    if (settingsObj?.profitMultiplier?.[materialLabel]) {
-        multiplier = Number(settingsObj.profitMultiplier[materialLabel]);
-        console.log('Found in profitMultiplier:', multiplier);
-    }
-    // Try in categories structure - look in "מכפילי רווח" category
-    else if (settingsObj?.categories) {
+    // FIRST try categories structure (new dynamic settings)
+    if (settingsObj?.categories) {
         const profitCategory = settingsObj.categories.find(cat => 
             cat.name === 'מכפילי רווח'
         );
         if (profitCategory) {
-            console.log('Found profit category:', profitCategory.name, profitCategory.items);
             // Map material names to profit multiplier names
             const materialToProfitMap = {
                 'כסף': 'מכפלת כסף',
                 'יציקה כסף': 'מכפלת יציקה כסף',
                 'זהב 14K': 'מכפלת זהב',
-                'ציפוי זהב': 'מכפלת ציפוי זהב'
+                'ציפוי זהב': 'מכפלת ציפוי זהב',
+                'יציקה ציפוי זהב': 'מכפלת יציקה ציפוי זהב'
             };
             
             const profitItemName = materialToProfitMap[materialLabel];
@@ -995,13 +967,19 @@ function getProfitMultiplier(materialLabel) {
                 );
                 if (profitItem) {
                     multiplier = Number(profitItem.value);
-                    console.log('Found profit multiplier:', profitItemName, '=', multiplier);
+                    console.log('getProfitMultiplier: Found in categories:', profitItemName, '=', multiplier);
+                    return multiplier;
                 }
             }
         }
     }
     
-    console.log('Final profit multiplier:', multiplier);
+    // Fallback to old direct lookup structure
+    if (settingsObj?.profitMultiplier?.[materialLabel]) {
+        multiplier = Number(settingsObj.profitMultiplier[materialLabel]);
+        console.log('getProfitMultiplier: Found in old profitMultiplier:', materialLabel, '=', multiplier);
+    }
+    
     return multiplier;
 }
 

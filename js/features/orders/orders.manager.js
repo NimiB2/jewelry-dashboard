@@ -1328,6 +1328,8 @@ class OrderManager {
         description: productsDescription,
         amount: order.finalAmount || order.amount,
         workHours: totalWorkHours,
+        // Store current labor hour rate with income entry (locked at creation time)
+        laborHourRate: window.getLaborHourRate ? window.getLaborHourRate() : 80,
         orderNumber: orderNumber,
         orderId: order.id,
         createdAt: new Date().toISOString()

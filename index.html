@@ -12,8 +12,9 @@
     <div class="container">
         <div class="header">
             <button id="settingsHeaderBtn" class="settings-btn" onclick="openSettings()">⚙️ הגדרות</button>
-            <h1>🏢 מערכת ניהול עסקית מתקדמת</h1>
-            <p>ניהול הוצאות, תמחור מוצרים ומעקב הזמנות</p>
+            <div class="daily-quote-label">✨ המשפט היומי ✨</div>
+            <h1 id="headerQuote">🏢 מערכת ניהול עסקית מתקדמת</h1>
+            <p class="header-subtitle">מערכת ניהול עסקית מתקדמת - ניהול הוצאות, תמחור מוצרים ומעקב הזמנות</p>
         </div>
 
         <div class="nav-tabs">
@@ -136,6 +137,7 @@
                                 <th>תיאור</th>
                                 <th>סכום</th>
                                 <th>שעות עבודה</th>
+                                <th>משכורת</th>
                                 <th>חוזר</th>
                                 <th>פעולות</th>
                             </tr>
@@ -655,6 +657,11 @@
                     <button type="button" class="btn-small" onclick="addEditAdditionRow()">➕ הוסף תוספת</button>
                 </div>
                 <div class="form-group">
+                    <label>שעות עבודה נוספות:</label>
+                    <input type="number" id="editAdditionalWorkHours" min="0" step="0.5" value="0" onchange="updateEditPricing()" style="width: 100px;">
+                    <span style="font-size: 12px; color: #666;">שעות</span>
+                </div>
+                <div class="form-group">
                     <label>מחיר מומלץ מחושב:</label>
                     <div id="editRecommendedPrice" style="font-size:16px; font-weight:bold; color:#0066cc;">₪0</div>
                 </div>
@@ -1073,22 +1080,37 @@
         }
         
         // Helper function to detect which categories have changed
+        // Categories are stored as ARRAYS, not objects - convert to maps for comparison
         function detectChangedCategories(oldCategories, newCategories) {
           const changedCategories = new Set();
           
+          // Convert arrays to maps keyed by category name for easier comparison
+          const oldCatArray = Array.isArray(oldCategories) ? oldCategories : [];
+          const newCatArray = Array.isArray(newCategories) ? newCategories : [];
+          
+          const oldMap = new Map();
+          const newMap = new Map();
+          
+          oldCatArray.forEach(cat => {
+            if (cat && cat.name) oldMap.set(cat.name, cat);
+          });
+          newCatArray.forEach(cat => {
+            if (cat && cat.name) newMap.set(cat.name, cat);
+          });
+          
           console.log('🔍 Detecting category changes...');
-          console.log('📋 Old categories:', Object.keys(oldCategories || {}));
-          console.log('📋 New categories:', Object.keys(newCategories || {}));
+          console.log('📋 Old categories:', Array.from(oldMap.keys()));
+          console.log('📋 New categories:', Array.from(newMap.keys()));
           
           // Check all category names from both old and new
           const allCategoryNames = new Set([
-            ...Object.keys(oldCategories || {}),
-            ...Object.keys(newCategories || {})
+            ...oldMap.keys(),
+            ...newMap.keys()
           ]);
           
           for (const categoryName of allCategoryNames) {
-            const oldCategory = oldCategories[categoryName];
-            const newCategory = newCategories[categoryName];
+            const oldCategory = oldMap.get(categoryName);
+            const newCategory = newMap.get(categoryName);
             
             console.log(`🔎 Checking category: "${categoryName}"`);
             
@@ -1099,14 +1121,28 @@
               continue;
             }
             
-            // Check if items were added/removed/modified
-            const oldJson = JSON.stringify(oldCategory);
-            const newJson = JSON.stringify(newCategory);
+            // Compare items (excluding 'collapsed' state which is UI-only)
+            const oldItems = JSON.stringify(oldCategory.items || []);
+            const newItems = JSON.stringify(newCategory.items || []);
+            const oldSubcats = JSON.stringify((oldCategory.subcategories || []).map(s => ({
+              name: s.name,
+              items: s.items || []
+            })));
+            const newSubcats = JSON.stringify((newCategory.subcategories || []).map(s => ({
+              name: s.name,
+              items: s.items || []
+            })));
             
-            if (oldJson !== newJson) {
+            if (oldItems !== newItems || oldSubcats !== newSubcats) {
               console.log(`🔄 Category "${categoryName}" was modified`);
-              console.log('📊 Old structure:', oldCategory);
-              console.log('📊 New structure:', newCategory);
+              if (oldItems !== newItems) {
+                console.log('📊 Items changed:');
+                console.log('   Old items:', oldCategory.items);
+                console.log('   New items:', newCategory.items);
+              }
+              if (oldSubcats !== newSubcats) {
+                console.log('📊 Subcategories changed');
+              }
               changedCategories.add(categoryName);
             } else {
               console.log(`✅ Category "${categoryName}" unchanged`);
@@ -1473,9 +1509,56 @@
         });
       })();
     </script>
+    <!-- FAB - Scroll to Top -->
+    <button id="scrollToTopBtn" class="fab-scroll-top" onclick="scrollToTop()" title="חזרה לראש העמוד">⬆️</button>
+    <script>
+        // FAB - Scroll to Top functionality
+        const scrollToTopBtn = document.getElementById('scrollToTopBtn');
+        
+        window.addEventListener('scroll', function() {
+            if (window.scrollY > 300) {
+                scrollToTopBtn.classList.add('visible');
+            } else {
+                scrollToTopBtn.classList.remove('visible');
+            }
+        });
+        
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+
     <!-- Bulk Product Import Script -->
     <script src="bulk_product_import.js"></script>
     <!-- Direct MongoDB Import Script -->
     <script src="data/import/import-to-mongodb.js"></script>
+    
+    <!-- Random Quote Loader -->
+    <script>
+        (function loadRandomQuote() {
+            const headerQuote = document.getElementById('headerQuote');
+            if (!headerQuote) return;
+            
+            // Get auth token
+            const token = localStorage.getItem('authToken') || '';
+            
+            fetch('/api/quotes/random', {
+                headers: {
+                    'Authorization': token ? `Bearer ${token}` : ''
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.quote) {
+                    headerQuote.textContent = data.quote;
+                    headerQuote.style.fontSize = '1.3rem';
+                    headerQuote.style.lineHeight = '1.5';
+                }
+            })
+            .catch(error => {
+                console.log('Could not load random quote, using default');
+            });
+        })();
+    </script>
 </body>
 </html>
