@@ -450,7 +450,10 @@ class OrderManager {
             </div>
             <div class="order-card-stats">
               <div class="order-card-amount">₪${amount.toFixed(0)}</div>
-              <span class="order-card-status status-badge status-${o.status}">${statusLabel}</span>
+              <div class="order-card-badges">
+                <span class="order-card-status status-badge status-${o.status}">${statusLabel}</span>
+                <span class="receipt-mini-badge ${o.receiptSent ? 'sent' : 'not-sent'}" onclick="event.stopPropagation(); toggleReceiptStatus(${o.id})">${o.receiptSent ? '🧾✓' : '🧾✗'}</span>
+              </div>
             </div>
             <div class="order-card-toggle">▼</div>
           </div>
@@ -459,10 +462,6 @@ class OrderManager {
             <div class="order-detail-row">
               <span class="order-detail-label">מוצרים:</span>
               <span class="order-detail-value">${o.products}</span>
-            </div>
-            <div class="order-detail-row" onclick="event.stopPropagation(); toggleReceiptStatus(${o.id})" style="cursor:pointer;">
-              <span class="order-detail-label">קבלה:</span>
-              <span class="receipt-badge ${o.receiptSent ? 'receipt-sent' : 'receipt-not-sent'}" style="padding:4px 10px;">${o.receiptSent ? '✅ נשלחה' : '❌ לא נשלחה'}</span>
             </div>
             ${o.hasDiscount ? `
             <div class="order-detail-row">

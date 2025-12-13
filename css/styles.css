@@ -1272,103 +1272,198 @@ tbody tr:hover {
     
     /* === STEP 6: Additional Elements === */
     
-    /* Stats Grid - compact */
+    /* Stats Grid - horizontal scroll single row */
     .stats-grid {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 6px;
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        gap: 8px;
+        padding: 8px 0;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+    
+    .stats-grid::-webkit-scrollbar {
+        display: none;
     }
     
     .stat-card {
-        padding: 8px 6px;
-        border-radius: 8px;
+        flex: 0 0 auto;
+        min-width: 90px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        text-align: center;
     }
     
     .stat-value {
-        font-size: 1em;
+        font-size: 1.1em;
+        font-weight: 700;
     }
     
     .stat-label {
-        font-size: 0.65em;
+        font-size: 0.7em;
+        white-space: nowrap;
     }
     
-    /* Settings - compact for mobile */
+    /* Settings - professional mobile design */
     .settings-panel {
-        padding: 10px !important;
+        padding: 8px !important;
+        background: #f8f9fa !important;
     }
     
     .settings-panel h2 {
         font-size: 1.1em !important;
-        margin-bottom: 10px !important;
-    }
-    
-    .settings-panel h3 {
-        font-size: 0.95em !important;
-        margin: 8px 0 !important;
+        margin-bottom: 8px !important;
+        text-align: center;
     }
     
     .settings-panel .cat-card {
-        margin: 6px 0 !important;
+        margin: 4px 0 !important;
+        border-radius: 8px !important;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05) !important;
     }
     
     .settings-panel .cat-header {
-        padding: 6px 10px !important;
-        font-size: 0.9em !important;
+        padding: 10px 12px !important;
+        font-size: 0.95em !important;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        color: white !important;
+        border-radius: 8px 8px 0 0 !important;
+    }
+    
+    .settings-panel .cat-header .icon-btn {
+        background: rgba(255,255,255,0.2) !important;
+        color: white !important;
+        border: none !important;
     }
     
     .settings-panel .sub-header {
-        padding: 5px 8px !important;
+        padding: 8px 10px !important;
         font-size: 0.85em !important;
+        background: #e9ecef !important;
     }
     
     .settings-panel .card-body {
-        padding: 6px 8px !important;
+        padding: 8px !important;
+        background: white !important;
     }
     
     .settings-panel .row {
-        flex-wrap: wrap !important;
+        display: grid !important;
+        grid-template-columns: 1fr 70px 36px !important;
         gap: 6px !important;
-        padding: 3px 0 !important;
+        padding: 6px 0 !important;
+        align-items: center !important;
+        border-bottom: 1px solid #f0f0f0;
     }
     
-    .settings-panel .row input[type="text"],
+    .settings-panel .row input[type="text"] {
+        font-size: 13px !important;
+        padding: 8px !important;
+        border-radius: 6px !important;
+        border: 1px solid #ddd !important;
+    }
+    
     .settings-panel .row input[type="number"] {
-        flex: 1 1 80px !important;
-        min-width: 70px !important;
-        padding: 6px !important;
-        font-size: 14px !important;
+        font-size: 13px !important;
+        padding: 8px !important;
+        border-radius: 6px !important;
+        border: 1px solid #ddd !important;
+        text-align: center !important;
     }
     
     .settings-panel .icon-btn {
-        padding: 4px 6px !important;
+        width: 32px !important;
+        height: 32px !important;
+        padding: 0 !important;
         font-size: 0.9em !important;
+        border-radius: 6px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
     }
     
     .settings-panel .sum-badge {
-        font-size: 0.8em !important;
-        padding: 2px 8px !important;
+        font-size: 0.85em !important;
+        padding: 4px 10px !important;
+        border-radius: 12px !important;
+        background: linear-gradient(135deg, #28a745, #20c997) !important;
+        color: white !important;
     }
     
-    .settings-row {
-        flex-direction: column !important;
-        gap: 8px !important;
-    }
-    
-    .settings-row button {
-        padding: 10px 12px !important;
-        font-size: 13px !important;
-        min-height: 38px !important;
-    }
-    
-    #categoriesManager > .settings-row > div {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        width: 100%;
+    #categoriesManager > .settings-row {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+        padding: 10px !important;
+        background: white !important;
+        border-radius: 8px !important;
+        margin-bottom: 8px !important;
     }
     
     #categoriesManager > .settings-row button {
-        flex: 1;
-        min-width: 100px;
+        flex: 1 1 45% !important;
+        padding: 12px 8px !important;
+        font-size: 12px !important;
+        min-height: 44px !important;
+        border-radius: 8px !important;
+    }
+    
+    /* Header buttons mobile */
+    .header-buttons {
+        position: fixed !important;
+        top: 8px !important;
+        left: 8px !important;
+        right: auto !important;
+        z-index: 1000 !important;
+        display: flex !important;
+        gap: 6px !important;
+    }
+    
+    .header-buttons button {
+        width: 40px !important;
+        height: 40px !important;
+        min-width: 40px !important;
+        min-height: 40px !important;
+        padding: 0 !important;
+        border-radius: 50% !important;
+        font-size: 1.1em !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
+    }
+    
+    /* Tab dropdown with text */
+    .tab-dropdown-item {
+        display: flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        padding: 14px 16px !important;
+        font-size: 15px !important;
+    }
+    
+    /* Modal compact */
+    #addOrderModal .modal-content,
+    #editOrderModal .modal-content {
+        padding: 12px !important;
+        max-height: 85vh !important;
+    }
+    
+    #addOrderModal .form-row,
+    #editOrderModal .form-row {
+        gap: 8px !important;
+    }
+    
+    #addOrderModal input,
+    #addOrderModal select,
+    #editOrderModal input,
+    #editOrderModal select {
+        padding: 10px !important;
+        font-size: 14px !important;
+    }
+    
+    #addOrderModal h2,
+    #editOrderModal h2 {
+        font-size: 1.1em !important;
+        margin-bottom: 10px !important;
     }
     
     /* Filters */
@@ -2061,5 +2156,35 @@ tbody tr:hover {
         padding: 10px;
         font-size: 13px;
         min-height: 40px;
+    }
+    
+    /* Receipt mini badge in summary */
+    .order-card-badges {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 4px;
+    }
+    
+    .receipt-mini-badge {
+        font-size: 0.85em;
+        padding: 2px 6px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .receipt-mini-badge.sent {
+        background: #d4edda;
+        color: #155724;
+    }
+    
+    .receipt-mini-badge.not-sent {
+        background: #f8d7da;
+        color: #721c24;
+    }
+    
+    .receipt-mini-badge:active {
+        transform: scale(0.95);
     }
 }
