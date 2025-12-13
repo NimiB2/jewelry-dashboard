@@ -185,6 +185,7 @@ class ProductManager {
     if (!container) return;
     
     const discountPercent = parseFloat(document.getElementById('listDiscountPercent')?.value || '0') || 0;
+    const hasDiscount = discountPercent > 0;
     
     container.innerHTML = products.map((p, index) => {
       const collectionsText = Array.isArray(p.collections) ? p.collections.join(', ') : 'כללי';
@@ -205,7 +206,7 @@ class ProductManager {
               </div>
             </div>
             <div class="product-item-stats">
-              <div class="product-item-price">₪${originalPrice.toFixed(0)}</div>
+              <div class="product-item-price">₪${originalPrice.toFixed(0)}${hasDiscount ? ` → <span style="color:#28a745;font-weight:bold;">₪${discountedPrice.toFixed(0)}</span>` : ''}</div>
               <div class="product-item-profit ${profitAmount >= 0 ? 'positive' : 'negative'}">
                 ₪${profitAmount.toFixed(0)} (${profitPercent.toFixed(0)}%)
               </div>
@@ -222,13 +223,22 @@ class ProductManager {
               <span class="product-detail-label">עלות:</span>
               <span class="product-detail-value">₪${currentCost.toFixed(0)}</span>
             </div>
-            <div class="product-detail-row">
-              <span class="product-detail-label">מחיר אחרי הנחה:</span>
-              <span class="product-detail-value">₪${discountedPrice.toFixed(0)}</span>
+            <div class="product-detail-row" onclick="event.stopPropagation()">
+              <span class="product-detail-label">💰 מחיר באתר:</span>
+              <div class="mobile-price-edit">
+                <input type="number" 
+                       class="mobile-price-input" 
+                       data-product-id="${p.id}" 
+                       data-original-price="${originalPrice.toFixed(0)}"
+                       value="${originalPrice.toFixed(0)}" 
+                       min="0" 
+                       onclick="event.stopPropagation()"
+                       onchange="saveMobilePrice(this)">
+              </div>
             </div>
             <div class="product-item-actions">
-              <button class="btn-small btn-warning" onclick="showEditProductModal(${p.id})">✏️ עריכה</button>
-              <button class="btn-small btn-danger" onclick="deleteProduct(${p.id})">🗑️ מחיקה</button>
+              <button class="btn-small btn-warning" onclick="event.stopPropagation(); showEditProductModal(${p.id})">✏️ עריכה מלאה</button>
+              <button class="btn-small btn-danger" onclick="event.stopPropagation(); deleteProduct(${p.id})">🗑️ מחיקה</button>
             </div>
           </div>
         </div>

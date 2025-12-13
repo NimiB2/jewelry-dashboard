@@ -1561,6 +1561,35 @@
             }
         }
         
+        // Save mobile price quickly
+        async function saveMobilePrice(input) {
+            const productId = parseInt(input.dataset.productId);
+            const originalPrice = parseFloat(input.dataset.originalPrice);
+            const newPrice = parseFloat(input.value);
+            
+            if (newPrice === originalPrice || isNaN(newPrice)) return;
+            
+            // Visual feedback
+            input.style.borderColor = '#ffc107';
+            input.disabled = true;
+            
+            try {
+                const manager = window.App?.Managers?.productManager;
+                if (manager) {
+                    await manager.saveInlinePrice(productId, originalPrice, newPrice);
+                    input.style.borderColor = '#28a745';
+                    input.dataset.originalPrice = newPrice;
+                }
+            } catch (err) {
+                console.error('Error saving price:', err);
+                input.value = originalPrice;
+                input.style.borderColor = '#dc3545';
+            }
+            
+            input.disabled = false;
+            setTimeout(() => { input.style.borderColor = '#667eea'; }, 1500);
+        }
+        
         function scrollToTop() {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
