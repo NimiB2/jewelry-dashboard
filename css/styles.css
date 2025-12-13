@@ -1747,7 +1747,238 @@ tbody tr:hover {
 
 /* Desktop: hide mobile list, show table */
 @media (min-width: 769px) {
-    .product-cards-container {
+    .product-cards-container,
+    .mobile-cards-container {
         display: none !important;
+    }
+}
+
+/* ========================================
+   MOBILE CARDS VIEW FOR ALL TABLES
+   ======================================== */
+@media (max-width: 768px) {
+    /* Hide tables on mobile */
+    #ordersTable,
+    #completedOrdersTable,
+    #expenseTable {
+        display: none !important;
+    }
+    
+    .mobile-cards-container {
+        display: flex !important;
+        flex-direction: column;
+        gap: 8px;
+        padding: 8px 0;
+    }
+    
+    /* Order Card */
+    .order-card {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        overflow: hidden;
+    }
+    
+    .order-card-summary {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 14px;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    
+    .order-card-summary:active {
+        background: #f5f5f5;
+    }
+    
+    .order-card-main {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .order-card-customer {
+        font-weight: 600;
+        font-size: 1em;
+        color: #333;
+        margin-bottom: 2px;
+    }
+    
+    .order-card-meta {
+        font-size: 0.8em;
+        color: #888;
+    }
+    
+    .order-card-stats {
+        text-align: left;
+        padding-right: 10px;
+    }
+    
+    .order-card-amount {
+        font-weight: bold;
+        font-size: 1.05em;
+        color: #28a745;
+    }
+    
+    .order-card-status {
+        font-size: 0.75em;
+        padding: 3px 8px;
+        border-radius: 12px;
+        margin-top: 4px;
+        display: inline-block;
+    }
+    
+    .order-card-toggle {
+        font-size: 1.2em;
+        color: #999;
+        transition: transform 0.3s;
+        padding: 0 4px;
+    }
+    
+    .order-card.expanded .order-card-toggle {
+        transform: rotate(180deg);
+    }
+    
+    .order-card-details {
+        display: none;
+        padding: 0 14px 14px;
+        border-top: 1px solid #eee;
+        background: #fafafa;
+    }
+    
+    .order-card.expanded .order-card-details {
+        display: block;
+    }
+    
+    .order-detail-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        font-size: 0.9em;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .order-detail-row:last-of-type {
+        border-bottom: none;
+    }
+    
+    .order-detail-label {
+        color: #666;
+    }
+    
+    .order-detail-value {
+        font-weight: 500;
+        color: #333;
+    }
+    
+    .order-card-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+        flex-wrap: wrap;
+    }
+    
+    .order-card-actions button {
+        flex: 1;
+        min-width: 70px;
+        padding: 10px 8px;
+        font-size: 12px;
+        min-height: 40px;
+    }
+    
+    /* Expense Card */
+    .expense-card {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        overflow: hidden;
+        border-right: 3px solid #28a745;
+    }
+    
+    .expense-card.expense-type {
+        border-right-color: #dc3545;
+    }
+    
+    .expense-card-summary {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 14px;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    
+    .expense-card-summary:active {
+        background: #f5f5f5;
+    }
+    
+    .expense-card-main {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .expense-card-desc {
+        font-weight: 600;
+        font-size: 1em;
+        color: #333;
+        margin-bottom: 2px;
+    }
+    
+    .expense-card-meta {
+        font-size: 0.8em;
+        color: #888;
+    }
+    
+    .expense-card-stats {
+        text-align: left;
+        padding-right: 10px;
+    }
+    
+    .expense-card-amount {
+        font-weight: bold;
+        font-size: 1.1em;
+    }
+    
+    .expense-card-amount.income {
+        color: #28a745;
+    }
+    
+    .expense-card-amount.expense {
+        color: #dc3545;
+    }
+    
+    .expense-card-toggle {
+        font-size: 1.2em;
+        color: #999;
+        transition: transform 0.3s;
+        padding: 0 4px;
+    }
+    
+    .expense-card.expanded .expense-card-toggle {
+        transform: rotate(180deg);
+    }
+    
+    .expense-card-details {
+        display: none;
+        padding: 0 14px 14px;
+        border-top: 1px solid #eee;
+        background: #fafafa;
+    }
+    
+    .expense-card.expanded .expense-card-details {
+        display: block;
+    }
+    
+    .expense-card-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 12px;
+    }
+    
+    .expense-card-actions button {
+        flex: 1;
+        padding: 10px;
+        font-size: 13px;
+        min-height: 40px;
     }
 }

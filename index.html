@@ -145,6 +145,9 @@
 
                 <div class="card">
                     <div class="card-header">רשימת הכנסות והוצאות</div>
+                    <!-- Mobile: Cards View -->
+                    <div id="expenseCardsContainer" class="mobile-cards-container"></div>
+                    <!-- Desktop: Table View -->
                     <table id="expenseTable">
                         <thead>
                             <tr>
@@ -409,6 +412,9 @@
 
                 <div class="card">
                     <div class="card-header">ניהול הזמנות</div>
+                    <!-- Mobile: Cards View -->
+                    <div id="ordersCardsContainer" class="mobile-cards-container"></div>
+                    <!-- Desktop: Table View -->
                     <table id="ordersTable">
                         <thead>
                             <tr>
@@ -430,6 +436,9 @@
                 <!-- Completed Orders Section -->
                 <div id="completedOrdersSection" class="card" style="display: none; margin-top: 20px;">
                     <div class="card-header">הזמנות מושלמות</div>
+                    <!-- Mobile: Cards View -->
+                    <div id="completedOrdersCardsContainer" class="mobile-cards-container"></div>
+                    <!-- Desktop: Table View -->
                     <table id="completedOrdersTable">
                         <thead>
                             <tr>
@@ -1572,6 +1581,22 @@
             const item = element.closest('.product-item');
             if (item) {
                 item.classList.toggle('expanded');
+            }
+        }
+        
+        // Toggle order expand/collapse on mobile
+        function toggleOrderExpand(element) {
+            const card = element.closest('.order-card');
+            if (card) {
+                card.classList.toggle('expanded');
+            }
+        }
+        
+        // Toggle expense expand/collapse on mobile
+        function toggleExpenseExpand(element) {
+            const card = element.closest('.expense-card');
+            if (card) {
+                card.classList.toggle('expanded');
             }
         }
         

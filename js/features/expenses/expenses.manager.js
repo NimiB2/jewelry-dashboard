@@ -524,6 +524,7 @@ class ExpenseManager {
         totalExpenses += exp.amount;
       }
     });
+    
     // Calculate salary using stored laborHourRate for each income entry
     // This ensures settings changes don't affect already-calculated salaries
     let totalSalary = 0;
@@ -547,6 +548,57 @@ class ExpenseManager {
     const marginEl = document.getElementById('profitMargin');
     if (marginEl) marginEl.textContent = `${profitMargin}%`;
     console.log('[Expense] loadExpenseData', { year, monthVal, count: filtered.length, totals: { totalIncome, totalExpenses, totalWorkHours } });
+    
+    // Render mobile cards
+    this.renderExpenseCards(filtered);
+  }
+  
+  renderExpenseCards(expenses) {
+    const container = document.getElementById('expenseCardsContainer');
+    if (!container) return;
+    
+    container.innerHTML = expenses.map(exp => {
+      if (!exp) return '';
+      const isIncome = exp.type === 'income';
+      const d = new Date(exp.date);
+      const formattedDate = `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear()}`;
+      const categoryMap = { sales: 'מכירות', other: 'אחר', fixed: 'קבועה', variable: 'משתנה' };
+      const categoryLabel = categoryMap[exp.category] || exp.category || '';
+      
+      return `
+        <div class="expense-card ${isIncome ? '' : 'expense-type'}" data-expense-id="${exp.id}">
+          <div class="expense-card-summary" onclick="toggleExpenseExpand(this)">
+            <div class="expense-card-main">
+              <div class="expense-card-desc">${exp.description || 'ללא תיאור'}</div>
+              <div class="expense-card-meta">${formattedDate} · ${isIncome ? 'הכנסה' : 'הוצאה'} ${categoryLabel ? '· ' + categoryLabel : ''}</div>
+            </div>
+            <div class="expense-card-stats">
+              <div class="expense-card-amount ${isIncome ? 'income' : 'expense'}">${isIncome ? '+' : '-'}₪${exp.amount.toFixed(0)}</div>
+            </div>
+            <div class="expense-card-toggle">▼</div>
+          </div>
+          
+          <div class="expense-card-details">
+            ${exp.workHours ? `
+            <div class="order-detail-row">
+              <span class="order-detail-label">שעות עבודה:</span>
+              <span class="order-detail-value">${exp.workHours}</span>
+            </div>
+            ` : ''}
+            ${exp.recurring ? `
+            <div class="order-detail-row">
+              <span class="order-detail-label">חוזר:</span>
+              <span class="order-detail-value">✅ כן</span>
+            </div>
+            ` : ''}
+            <div class="expense-card-actions">
+              <button class="btn-small btn-warning" onclick="event.stopPropagation(); showEditExpenseModal('${String(exp.id)}')">✏️ עריכה</button>
+              <button class="btn-small btn-danger" onclick="event.stopPropagation(); deleteExpense('${String(exp.id)}')">🗑️ מחק</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
   }
 
   async addRecurringExpenseToFutureMonths(expense) {

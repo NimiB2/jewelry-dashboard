@@ -428,6 +428,57 @@ class OrderManager {
             </td>
         `;
     });
+    
+    // Render mobile cards
+    this.renderOrderCards(filteredOrders);
+  }
+  
+  renderOrderCards(orders) {
+    const container = document.getElementById('ordersCardsContainer');
+    if (!container) return;
+    
+    container.innerHTML = orders.map((o, index) => {
+      const amount = o.finalAmount || o.amount;
+      const statusLabel = this.getStatusLabel(o.status);
+      
+      return `
+        <div class="order-card" data-order-id="${o.id}">
+          <div class="order-card-summary" onclick="toggleOrderExpand(this)">
+            <div class="order-card-main">
+              <div class="order-card-customer">${o.customer}</div>
+              <div class="order-card-meta">#${o.number} · ${this.formatDateHebrew(o.date)}</div>
+            </div>
+            <div class="order-card-stats">
+              <div class="order-card-amount">₪${amount.toFixed(0)}</div>
+              <span class="order-card-status status-badge status-${o.status}">${statusLabel}</span>
+            </div>
+            <div class="order-card-toggle">▼</div>
+          </div>
+          
+          <div class="order-card-details">
+            <div class="order-detail-row">
+              <span class="order-detail-label">מוצרים:</span>
+              <span class="order-detail-value">${o.products}</span>
+            </div>
+            <div class="order-detail-row">
+              <span class="order-detail-label">קבלה:</span>
+              <span class="order-detail-value">${o.receiptSent ? '✅ נשלחה' : '❌ לא נשלחה'}</span>
+            </div>
+            ${o.hasDiscount ? `
+            <div class="order-detail-row">
+              <span class="order-detail-label">הנחה:</span>
+              <span class="order-detail-value" style="color:#dc3545;">₪${(o.amount - o.finalAmount).toFixed(0)} (${((o.amount - o.finalAmount) / o.amount * 100).toFixed(0)}%)</span>
+            </div>
+            ` : ''}
+            <div class="order-card-actions">
+              <button class="btn-small btn-info" onclick="event.stopPropagation(); showOrderDetails(${o.id})">👁️ פרטים</button>
+              <button class="btn-small btn-warning" onclick="event.stopPropagation(); showEditOrderModal(${o.id})">✏️ עריכה</button>
+              <button class="btn-small btn-danger" onclick="event.stopPropagation(); deleteOrder(${o.id})">🗑️ מחק</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
   }
 
   showAddOrderModal() {
@@ -1263,6 +1314,49 @@ class OrderManager {
         </td>
       `;
     });
+    
+    // Render mobile cards for completed orders
+    this.renderCompletedOrderCards(completedOrders);
+  }
+  
+  renderCompletedOrderCards(orders) {
+    const container = document.getElementById('completedOrdersCardsContainer');
+    if (!container) return;
+    
+    container.innerHTML = orders.map((o) => {
+      const amount = o.finalAmount || o.amount;
+      
+      return `
+        <div class="order-card" data-order-id="${o.id}">
+          <div class="order-card-summary" onclick="toggleOrderExpand(this)">
+            <div class="order-card-main">
+              <div class="order-card-customer">${o.customer}</div>
+              <div class="order-card-meta">#${o.number} · ${this.formatDateHebrew(o.date)}</div>
+            </div>
+            <div class="order-card-stats">
+              <div class="order-card-amount">₪${amount.toFixed(0)}</div>
+              <span class="order-card-status" style="background:#28a745;color:white;">✅ הושלם</span>
+            </div>
+            <div class="order-card-toggle">▼</div>
+          </div>
+          
+          <div class="order-card-details">
+            <div class="order-detail-row">
+              <span class="order-detail-label">מוצרים:</span>
+              <span class="order-detail-value">${o.products}</span>
+            </div>
+            <div class="order-detail-row">
+              <span class="order-detail-label">הושלם בתאריך:</span>
+              <span class="order-detail-value">${this.formatDateHebrew(o.completedDate)}</span>
+            </div>
+            <div class="order-card-actions">
+              <button class="btn-small btn-info" onclick="event.stopPropagation(); showOrderDetails(${o.id})">👁️ פרטים</button>
+              <button class="btn-small btn-warning" onclick="event.stopPropagation(); restoreOrder(${o.id})">↩️ החזר</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
   }
 
   showCompletedOrdersAutomatically() {
