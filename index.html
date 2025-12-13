@@ -1529,7 +1529,10 @@
           ensureDefaultCategories();
           renderCategories();
           attachHandlers();
-          pinToSettings();
+          // Set orders tab as default
+          setTimeout(() => {
+            if (typeof switchTab === 'function') switchTab('orders');
+          }, 150);
         });
       })();
     </script>
