@@ -1553,6 +1553,14 @@
             }
         });
         
+        // Toggle product expand/collapse on mobile
+        function toggleProductExpand(element) {
+            const item = element.closest('.product-item');
+            if (item) {
+                item.classList.toggle('expanded');
+            }
+        }
+        
         function scrollToTop() {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }

@@ -179,7 +179,7 @@ class ProductManager {
     this.setupPriceEditHandlers();
   }
 
-  // Mobile cards view for products
+  // Mobile compact list view with expandable details
   renderProductCards(products) {
     const container = document.getElementById('productCardsContainer');
     if (!container) return;
@@ -189,7 +189,6 @@ class ProductManager {
     container.innerHTML = products.map((p, index) => {
       const collectionsText = Array.isArray(p.collections) ? p.collections.join(', ') : 'כללי';
       const currentCost = this.calculateDynamicCost(p);
-      const recommendedMinPrice = currentCost * 1.3;
       const originalPrice = p.sitePrice || p.price || 0;
       const discountedPrice = originalPrice * (1 - discountPercent / 100);
       const profitAmount = discountedPrice - currentCost;
@@ -197,47 +196,40 @@ class ProductManager {
       const isLowProfit = profitPercent < 30;
       
       return `
-        <div class="product-card ${isLowProfit ? 'low-profit' : ''}">
-          <div class="product-card-header">
-            <div class="product-card-title">${p.name || 'ללא שם'} ${isLowProfit ? '⚠️' : ''}</div>
-            <span class="product-card-number">#${index + 1}</span>
+        <div class="product-item ${isLowProfit ? 'low-profit' : ''}" data-product-id="${p.id}">
+          <div class="product-item-summary" onclick="toggleProductExpand(this)">
+            <div class="product-item-main">
+              <div class="product-item-name">${p.name || 'ללא שם'} ${isLowProfit ? '⚠️' : ''}</div>
+              <div class="product-item-meta">
+                <span class="type">${p.type || '-'}</span> · <span class="material">${p.material || '-'}</span>
+              </div>
+            </div>
+            <div class="product-item-stats">
+              <div class="product-item-price">₪${originalPrice.toFixed(0)}</div>
+              <div class="product-item-profit ${profitAmount >= 0 ? 'positive' : 'negative'}">
+                ₪${profitAmount.toFixed(0)} (${profitPercent.toFixed(0)}%)
+              </div>
+            </div>
+            <div class="product-item-toggle">▼</div>
           </div>
           
-          <div class="product-card-row">
-            <span class="product-card-label">סוג:</span>
-            <span class="product-card-value">${p.type || '-'}</span>
-          </div>
-          
-          <div class="product-card-row">
-            <span class="product-card-label">חומר:</span>
-            <span class="product-card-value">${p.material || '-'}</span>
-          </div>
-          
-          <div class="product-card-row">
-            <span class="product-card-label">קולקציה:</span>
-            <span class="product-card-value">${collectionsText}</span>
-          </div>
-          
-          <div class="product-card-row">
-            <span class="product-card-label">עלות:</span>
-            <span class="product-card-value">₪${currentCost.toFixed(0)}</span>
-          </div>
-          
-          <div class="product-card-row">
-            <span class="product-card-label">💰 מחיר באתר:</span>
-            <span class="product-card-value" style="font-size: 1.1em; color: #667eea;">₪${originalPrice.toFixed(0)}</span>
-          </div>
-          
-          <div class="product-card-profit">
-            <span class="product-card-label">רווח:</span>
-            <span class="${profitAmount >= 0 ? 'profit-positive' : 'profit-negative'}" style="font-weight: bold;">
-              ₪${profitAmount.toFixed(0)} (${profitPercent.toFixed(0)}%)
-            </span>
-          </div>
-          
-          <div class="product-card-actions">
-            <button class="btn-small btn-warning" onclick="showEditProductModal(${p.id})">✏️ עריכה</button>
-            <button class="btn-small btn-danger" onclick="deleteProduct(${p.id})">🗑️ מחיקה</button>
+          <div class="product-item-details">
+            <div class="product-detail-row">
+              <span class="product-detail-label">קולקציה:</span>
+              <span class="product-detail-value">${collectionsText}</span>
+            </div>
+            <div class="product-detail-row">
+              <span class="product-detail-label">עלות:</span>
+              <span class="product-detail-value">₪${currentCost.toFixed(0)}</span>
+            </div>
+            <div class="product-detail-row">
+              <span class="product-detail-label">מחיר אחרי הנחה:</span>
+              <span class="product-detail-value">₪${discountedPrice.toFixed(0)}</span>
+            </div>
+            <div class="product-item-actions">
+              <button class="btn-small btn-warning" onclick="showEditProductModal(${p.id})">✏️ עריכה</button>
+              <button class="btn-small btn-danger" onclick="deleteProduct(${p.id})">🗑️ מחיקה</button>
+            </div>
           </div>
         </div>
       `;
