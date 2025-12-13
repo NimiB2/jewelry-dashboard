@@ -1272,22 +1272,103 @@ tbody tr:hover {
     
     /* === STEP 6: Additional Elements === */
     
-    /* Stats Grid */
+    /* Stats Grid - compact */
     .stats-grid {
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
     }
     
     .stat-card {
-        padding: 12px;
+        padding: 8px 6px;
+        border-radius: 8px;
     }
     
     .stat-value {
-        font-size: 1.4em;
+        font-size: 1em;
     }
     
     .stat-label {
-        font-size: 0.75em;
+        font-size: 0.65em;
+    }
+    
+    /* Settings - compact for mobile */
+    .settings-panel {
+        padding: 10px !important;
+    }
+    
+    .settings-panel h2 {
+        font-size: 1.1em !important;
+        margin-bottom: 10px !important;
+    }
+    
+    .settings-panel h3 {
+        font-size: 0.95em !important;
+        margin: 8px 0 !important;
+    }
+    
+    .settings-panel .cat-card {
+        margin: 6px 0 !important;
+    }
+    
+    .settings-panel .cat-header {
+        padding: 6px 10px !important;
+        font-size: 0.9em !important;
+    }
+    
+    .settings-panel .sub-header {
+        padding: 5px 8px !important;
+        font-size: 0.85em !important;
+    }
+    
+    .settings-panel .card-body {
+        padding: 6px 8px !important;
+    }
+    
+    .settings-panel .row {
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+        padding: 3px 0 !important;
+    }
+    
+    .settings-panel .row input[type="text"],
+    .settings-panel .row input[type="number"] {
+        flex: 1 1 80px !important;
+        min-width: 70px !important;
+        padding: 6px !important;
+        font-size: 14px !important;
+    }
+    
+    .settings-panel .icon-btn {
+        padding: 4px 6px !important;
+        font-size: 0.9em !important;
+    }
+    
+    .settings-panel .sum-badge {
+        font-size: 0.8em !important;
+        padding: 2px 8px !important;
+    }
+    
+    .settings-row {
+        flex-direction: column !important;
+        gap: 8px !important;
+    }
+    
+    .settings-row button {
+        padding: 10px 12px !important;
+        font-size: 13px !important;
+        min-height: 38px !important;
+    }
+    
+    #categoriesManager > .settings-row > div {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        width: 100%;
+    }
+    
+    #categoriesManager > .settings-row button {
+        flex: 1;
+        min-width: 100px;
     }
     
     /* Filters */

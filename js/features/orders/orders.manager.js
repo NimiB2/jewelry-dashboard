@@ -460,9 +460,9 @@ class OrderManager {
               <span class="order-detail-label">מוצרים:</span>
               <span class="order-detail-value">${o.products}</span>
             </div>
-            <div class="order-detail-row">
+            <div class="order-detail-row" onclick="event.stopPropagation(); toggleReceiptStatus(${o.id})" style="cursor:pointer;">
               <span class="order-detail-label">קבלה:</span>
-              <span class="order-detail-value">${o.receiptSent ? '✅ נשלחה' : '❌ לא נשלחה'}</span>
+              <span class="receipt-badge ${o.receiptSent ? 'receipt-sent' : 'receipt-not-sent'}" style="padding:4px 10px;">${o.receiptSent ? '✅ נשלחה' : '❌ לא נשלחה'}</span>
             </div>
             ${o.hasDiscount ? `
             <div class="order-detail-row">
@@ -471,9 +471,9 @@ class OrderManager {
             </div>
             ` : ''}
             <div class="order-card-actions">
-              <button class="btn-small btn-info" onclick="event.stopPropagation(); showOrderDetails(${o.id})">👁️ פרטים</button>
-              <button class="btn-small btn-warning" onclick="event.stopPropagation(); showEditOrderModal(${o.id})">✏️ עריכה</button>
-              <button class="btn-small btn-danger" onclick="event.stopPropagation(); deleteOrder(${o.id})">🗑️ מחק</button>
+              <button class="btn-small btn-info" onclick="event.stopPropagation(); showOrderDetails(${o.id})">👁️</button>
+              <button class="btn-small btn-warning" onclick="event.stopPropagation(); showEditOrderModal(${o.id})">✏️</button>
+              <button class="btn-small btn-danger" onclick="event.stopPropagation(); deleteOrder(${o.id})">🗑️</button>
             </div>
           </div>
         </div>
