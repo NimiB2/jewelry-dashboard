@@ -12,6 +12,7 @@ const expensesRouter = require('./api/routes/expenses');
 const incomeRouter = require('./api/routes/income');
 const settingsRouter = require('./api/routes/settings');
 const quotesRouter = require('./api/routes/quotes');
+const authRouter = require('./api/routes/auth');
 const { isAuthenticated, login } = require('./middleware/auth');
 
 const app = express();
@@ -31,6 +32,7 @@ app.use((req, res, next) => {
 
 // Public routes (no auth required)
 app.post('/api/auth/login', login);
+app.use('/api/auth', authRouter);
 
 // Protected API Routes (require authentication)
 const useAuth = process.env.USE_AUTH !== 'false';

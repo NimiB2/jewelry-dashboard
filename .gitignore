@@ -1,6 +1,10 @@
 # Environment variables
 .env
 
+# Firebase Service Account (SENSITIVE - never commit!)
+firebase-service-account.json
+**/firebase-service-account.json
+
 # Node modules
 node_modules/
 

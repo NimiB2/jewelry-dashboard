@@ -9,15 +9,20 @@
     "test-db": "node test-connection.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "mongodb": "^6.3.0",
+    "cors": "^2.8.5",
     "dotenv": "^16.3.1",
-    "cors": "^2.8.5"
+    "express": "^4.18.2",
+    "firebase-admin": "^13.6.0",
+    "mongodb": "^6.3.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"
   },
-  "keywords": ["jewelry", "dashboard", "mongodb"],
+  "keywords": [
+    "jewelry",
+    "dashboard",
+    "mongodb"
+  ],
   "author": "",
   "license": "ISC"
 }
