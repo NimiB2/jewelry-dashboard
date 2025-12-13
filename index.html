@@ -9,24 +9,6 @@
     <script src="public/auth-check.js"></script>
 </head>
 <body>
-    <script>
-        // Force orders tab as default - runs immediately
-        document.addEventListener('DOMContentLoaded', function() {
-            var settings = document.getElementById('settings');
-            var orders = document.getElementById('orders');
-            if (settings) settings.classList.remove('active');
-            if (orders) orders.classList.add('active');
-        });
-        window.addEventListener('load', function() {
-            var settings = document.getElementById('settings');
-            var orders = document.getElementById('orders');
-            if (settings) { settings.classList.remove('active'); settings.style.display = 'none'; }
-            if (orders) { orders.classList.add('active'); orders.style.display = 'block'; }
-            document.querySelectorAll('.nav-tab').forEach(function(t) { t.classList.remove('active'); });
-            var ordersTab = document.querySelector('.nav-tab[onclick*="orders"]');
-            if (ordersTab) ordersTab.classList.add('active');
-        });
-    </script>
     <div class="container">
         <div class="header">
             <div class="header-buttons">
@@ -41,12 +23,12 @@
         <div class="nav-tabs">
             <button class="nav-tab" onclick="switchTab('expenses')">💰 הכנסות והוצאות</button>
             <button class="nav-tab" onclick="switchTab('pricing')">💎 תמחור מוצרים</button>
-            <button class="nav-tab active" onclick="switchTab('orders')">📦 ניהול הזמנות</button>
+            <button class="nav-tab" onclick="switchTab('orders')">📦 ניהול הזמנות</button>
         </div>
 
         <div class="content">
             <!-- Settings Section -->
-            <div id="settings" class="section" style="display:none !important;">
+            <div id="settings" class="section">
                 <div class="settings-panel">
                     <style>
                       /* Scoped to settings panel only */
@@ -384,7 +366,7 @@
             </div>
 
             <!-- Orders Section -->
-            <div id="orders" class="section active">
+            <div id="orders" class="section">
                 <div class="filters">
                     <div class="filter-group">
                         <label>חודש:</label>
@@ -1496,15 +1478,9 @@
         // Safe open for Settings that does not assume a nav-tab exists
         window.openSettings = function(){
           try {
-            document.querySelectorAll('.section').forEach(s => {
-              s.classList.remove('active');
-              s.style.removeProperty('display');
-            });
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             const sec = document.getElementById('settings');
-            if (sec) {
-              sec.style.removeProperty('display');
-              sec.classList.add('active');
-            }
+            if (sec) sec.classList.add('active');
             document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
           } catch {}
         };
@@ -1532,7 +1508,7 @@
           ensureDefaultCategories();
           renderCategories();
           attachHandlers();
-          // Orders tab is set as default by script at top of body
+          pinToSettings();
         });
       })();
     </script>
