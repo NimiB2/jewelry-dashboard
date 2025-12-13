@@ -23,8 +23,7 @@
         <!-- Mobile: Tab Menu Button -->
         <div class="mobile-tab-menu">
             <button class="tab-menu-btn" onclick="toggleTabMenu()">
-                <span class="menu-icon">☰</span>
-                <span class="current-tab-name">📦 ניהול הזמנות</span>
+                <span class="current-tab-name">📦</span>
                 <span class="dropdown-arrow">▼</span>
             </button>
             <div class="tab-dropdown" id="tabDropdown">
@@ -1583,14 +1582,14 @@
         }
         
         function selectTab(tabName) {
-            // Update current tab name display
-            const tabNames = {
-                'expenses': '💰 הכנסות והוצאות',
-                'pricing': '💎 תמחור מוצרים',
-                'orders': '📦 ניהול הזמנות'
+            // Update current tab - emoji only
+            const tabEmojis = {
+                'expenses': '💰',
+                'pricing': '💎',
+                'orders': '📦'
             };
             const currentTabEl = document.querySelector('.current-tab-name');
-            if (currentTabEl) currentTabEl.textContent = tabNames[tabName] || tabName;
+            if (currentTabEl) currentTabEl.textContent = tabEmojis[tabName] || '📦';
             
             // Close dropdown
             const menu = document.querySelector('.mobile-tab-menu');

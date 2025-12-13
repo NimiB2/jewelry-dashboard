@@ -1301,18 +1301,65 @@ tbody tr:hover {
         min-width: 100%;
     }
     
-    /* FAB position - smaller and less intrusive */
+    /* FAB - minimal */
     .fab-scroll-top {
-        bottom: 15px;
-        left: 15px;
-        width: 40px;
-        height: 40px;
-        font-size: 16px;
-        opacity: 0.7;
+        bottom: 10px;
+        left: 10px;
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
+        opacity: 0.5;
     }
     
     .fab-scroll-top.visible {
-        opacity: 0.8;
+        opacity: 0.6;
+    }
+    
+    /* Header - compact */
+    .header {
+        padding: 10px 15px !important;
+    }
+    
+    .daily-quote-label {
+        font-size: 0.7em !important;
+        margin-bottom: 2px !important;
+    }
+    
+    .header h1#headerQuote {
+        font-size: 0.95em !important;
+        padding: 8px 12px !important;
+        margin-bottom: 0 !important;
+    }
+    
+    .header-subtitle {
+        display: none !important;
+    }
+    
+    /* Header buttons - transparent, sides */
+    .header-buttons {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        right: 8px;
+        display: flex;
+        justify-content: space-between;
+        gap: 0;
+    }
+    
+    .settings-btn,
+    .logout-btn {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 5px;
+        font-size: 1.3em;
+        min-width: auto;
+        opacity: 0.9;
+    }
+    
+    .settings-btn:active,
+    .logout-btn:active {
+        opacity: 0.6;
     }
     
     /* Hide desktop tabs, show mobile menu */
@@ -1323,31 +1370,44 @@ tbody tr:hover {
     .mobile-tab-menu {
         display: block !important;
         position: relative;
-        margin: 10px 0;
+        margin: 6px 0;
     }
     
     .tab-menu-btn {
         width: 100%;
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        padding: 14px 16px;
+        justify-content: center;
+        gap: 8px;
+        padding: 10px 14px;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
         border: none;
-        border-radius: 10px;
-        font-size: 1em;
-        font-weight: 600;
+        border-radius: 8px;
+        font-size: 1.1em;
         cursor: pointer;
-        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        box-shadow: 0 2px 6px rgba(102, 126, 234, 0.25);
     }
     
     .menu-icon {
+        display: none;
+    }
+    
+    .current-tab-name {
         font-size: 1.2em;
     }
     
+    /* Hide text in current tab, show only emoji */
+    .current-tab-name {
+        font-size: 0;
+    }
+    
+    .current-tab-name::before {
+        font-size: 1.4rem;
+    }
+    
     .dropdown-arrow {
-        font-size: 0.8em;
+        font-size: 0.7em;
         transition: transform 0.3s;
     }
     
@@ -1362,9 +1422,9 @@ tbody tr:hover {
         left: 0;
         right: 0;
         background: white;
-        border-radius: 10px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-        margin-top: 5px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        margin-top: 4px;
         z-index: 100;
         overflow: hidden;
     }
@@ -1375,11 +1435,11 @@ tbody tr:hover {
     
     .tab-dropdown-item {
         width: 100%;
-        padding: 14px 16px;
+        padding: 12px 14px;
         border: none;
         background: white;
         text-align: right;
-        font-size: 1em;
+        font-size: 0.95em;
         cursor: pointer;
         transition: background 0.2s;
     }
@@ -1391,18 +1451,6 @@ tbody tr:hover {
     
     .tab-dropdown-item:not(:last-child) {
         border-bottom: 1px solid #eee;
-    }
-    
-    /* Header buttons - icon only */
-    .header-buttons {
-        gap: 8px;
-    }
-    
-    .settings-btn,
-    .logout-btn {
-        padding: 8px 10px;
-        font-size: 1.2em;
-        min-width: auto;
     }
     
     /* Price Display */
