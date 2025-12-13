@@ -172,8 +172,76 @@ class ProductManager {
         `;
     });
     
+    // Render mobile cards view
+    this.renderProductCards(filtered);
+    
     // Set up click handlers for editable price cells
     this.setupPriceEditHandlers();
+  }
+
+  // Mobile cards view for products
+  renderProductCards(products) {
+    const container = document.getElementById('productCardsContainer');
+    if (!container) return;
+    
+    const discountPercent = parseFloat(document.getElementById('listDiscountPercent')?.value || '0') || 0;
+    
+    container.innerHTML = products.map((p, index) => {
+      const collectionsText = Array.isArray(p.collections) ? p.collections.join(', ') : 'כללי';
+      const currentCost = this.calculateDynamicCost(p);
+      const recommendedMinPrice = currentCost * 1.3;
+      const originalPrice = p.sitePrice || p.price || 0;
+      const discountedPrice = originalPrice * (1 - discountPercent / 100);
+      const profitAmount = discountedPrice - currentCost;
+      const profitPercent = currentCost > 0 ? (profitAmount / currentCost) * 100 : 0;
+      const isLowProfit = profitPercent < 30;
+      
+      return `
+        <div class="product-card ${isLowProfit ? 'low-profit' : ''}">
+          <div class="product-card-header">
+            <div class="product-card-title">${p.name || 'ללא שם'} ${isLowProfit ? '⚠️' : ''}</div>
+            <span class="product-card-number">#${index + 1}</span>
+          </div>
+          
+          <div class="product-card-row">
+            <span class="product-card-label">סוג:</span>
+            <span class="product-card-value">${p.type || '-'}</span>
+          </div>
+          
+          <div class="product-card-row">
+            <span class="product-card-label">חומר:</span>
+            <span class="product-card-value">${p.material || '-'}</span>
+          </div>
+          
+          <div class="product-card-row">
+            <span class="product-card-label">קולקציה:</span>
+            <span class="product-card-value">${collectionsText}</span>
+          </div>
+          
+          <div class="product-card-row">
+            <span class="product-card-label">עלות:</span>
+            <span class="product-card-value">₪${currentCost.toFixed(0)}</span>
+          </div>
+          
+          <div class="product-card-row">
+            <span class="product-card-label">💰 מחיר באתר:</span>
+            <span class="product-card-value" style="font-size: 1.1em; color: #667eea;">₪${originalPrice.toFixed(0)}</span>
+          </div>
+          
+          <div class="product-card-profit">
+            <span class="product-card-label">רווח:</span>
+            <span class="${profitAmount >= 0 ? 'profit-positive' : 'profit-negative'}" style="font-weight: bold;">
+              ₪${profitAmount.toFixed(0)} (${profitPercent.toFixed(0)}%)
+            </span>
+          </div>
+          
+          <div class="product-card-actions">
+            <button class="btn-small btn-warning" onclick="showEditProductModal(${p.id})">✏️ עריכה</button>
+            <button class="btn-small btn-danger" onclick="deleteProduct(${p.id})">🗑️ מחיקה</button>
+          </div>
+        </div>
+      `;
+    }).join('');
   }
 
   setupPriceEditHandlers() {
