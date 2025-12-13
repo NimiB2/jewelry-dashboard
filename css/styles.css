@@ -1317,7 +1317,8 @@ tbody tr:hover {
     
     /* Header - compact */
     .header {
-        padding: 10px 15px !important;
+        padding: 12px 15px !important;
+        padding-top: 35px !important;
     }
     
     .daily-quote-label {
@@ -1335,15 +1336,15 @@ tbody tr:hover {
         display: none !important;
     }
     
-    /* Header buttons - transparent, sides */
+    /* Header buttons - transparent, at top corners */
     .header-buttons {
         position: absolute;
-        top: 8px;
-        left: 8px;
-        right: 8px;
+        top: 5px;
+        left: 10px;
+        right: 10px;
         display: flex;
         justify-content: space-between;
-        gap: 0;
+        z-index: 10;
     }
     
     .settings-btn,
@@ -1352,14 +1353,14 @@ tbody tr:hover {
         border: none !important;
         box-shadow: none !important;
         padding: 5px;
-        font-size: 1.3em;
+        font-size: 1.4em;
         min-width: auto;
-        opacity: 0.9;
+        opacity: 0.85;
     }
     
     .settings-btn:active,
     .logout-btn:active {
-        opacity: 0.6;
+        opacity: 0.5;
     }
     
     /* Hide desktop tabs, show mobile menu */
@@ -1384,7 +1385,7 @@ tbody tr:hover {
         color: white;
         border: none;
         border-radius: 8px;
-        font-size: 1.1em;
+        font-size: 1.3em;
         cursor: pointer;
         box-shadow: 0 2px 6px rgba(102, 126, 234, 0.25);
     }
@@ -1394,16 +1395,7 @@ tbody tr:hover {
     }
     
     .current-tab-name {
-        font-size: 1.2em;
-    }
-    
-    /* Hide text in current tab, show only emoji */
-    .current-tab-name {
-        font-size: 0;
-    }
-    
-    .current-tab-name::before {
-        font-size: 1.4rem;
+        font-size: 1.3em;
     }
     
     .dropdown-arrow {
