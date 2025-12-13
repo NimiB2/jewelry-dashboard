@@ -4,6 +4,11 @@
     box-sizing: border-box;
 }
 
+/* Desktop: hide mobile tab menu */
+.mobile-tab-menu {
+    display: none;
+}
+
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -1296,13 +1301,108 @@ tbody tr:hover {
         min-width: 100%;
     }
     
-    /* FAB position */
+    /* FAB position - smaller and less intrusive */
     .fab-scroll-top {
-        bottom: 20px;
-        left: 20px;
-        width: 50px;
-        height: 50px;
-        font-size: 20px;
+        bottom: 15px;
+        left: 15px;
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
+        opacity: 0.7;
+    }
+    
+    .fab-scroll-top.visible {
+        opacity: 0.8;
+    }
+    
+    /* Hide desktop tabs, show mobile menu */
+    .desktop-tabs {
+        display: none !important;
+    }
+    
+    .mobile-tab-menu {
+        display: block !important;
+        position: relative;
+        margin: 10px 0;
+    }
+    
+    .tab-menu-btn {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 16px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 1em;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    }
+    
+    .menu-icon {
+        font-size: 1.2em;
+    }
+    
+    .dropdown-arrow {
+        font-size: 0.8em;
+        transition: transform 0.3s;
+    }
+    
+    .mobile-tab-menu.open .dropdown-arrow {
+        transform: rotate(180deg);
+    }
+    
+    .tab-dropdown {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        margin-top: 5px;
+        z-index: 100;
+        overflow: hidden;
+    }
+    
+    .mobile-tab-menu.open .tab-dropdown {
+        display: block;
+    }
+    
+    .tab-dropdown-item {
+        width: 100%;
+        padding: 14px 16px;
+        border: none;
+        background: white;
+        text-align: right;
+        font-size: 1em;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    
+    .tab-dropdown-item:hover,
+    .tab-dropdown-item:active {
+        background: #f0f4ff;
+    }
+    
+    .tab-dropdown-item:not(:last-child) {
+        border-bottom: 1px solid #eee;
+    }
+    
+    /* Header buttons - icon only */
+    .header-buttons {
+        gap: 8px;
+    }
+    
+    .settings-btn,
+    .logout-btn {
+        padding: 8px 10px;
+        font-size: 1.2em;
+        min-width: auto;
     }
     
     /* Price Display */

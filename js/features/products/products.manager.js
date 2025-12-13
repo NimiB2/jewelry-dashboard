@@ -206,7 +206,7 @@ class ProductManager {
               </div>
             </div>
             <div class="product-item-stats">
-              <div class="product-item-price">₪${originalPrice.toFixed(0)}${hasDiscount ? ` → <span style="color:#28a745;font-weight:bold;">₪${discountedPrice.toFixed(0)}</span>` : ''}</div>
+              <div class="product-item-price">${hasDiscount ? `<span style="text-decoration:line-through;color:#999;">₪${originalPrice.toFixed(0)}</span> ← <span style="color:#28a745;font-weight:bold;">₪${discountedPrice.toFixed(0)}</span>` : `₪${originalPrice.toFixed(0)}`}</div>
               <div class="product-item-profit ${profitAmount >= 0 ? 'positive' : 'negative'}">
                 ₪${profitAmount.toFixed(0)} (${profitPercent.toFixed(0)}%)
               </div>

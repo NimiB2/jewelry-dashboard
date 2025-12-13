@@ -12,15 +12,30 @@
     <div class="container">
         <div class="header">
             <div class="header-buttons">
-                <button id="settingsHeaderBtn" class="settings-btn" onclick="openSettings()">⚙️ הגדרות</button>
-                <button id="logoutBtn" class="logout-btn" onclick="logout()">🚪 התנתק</button>
+                <button id="settingsHeaderBtn" class="settings-btn" onclick="openSettings()" title="הגדרות">⚙️</button>
+                <button id="logoutBtn" class="logout-btn" onclick="logout()" title="התנתק">🚪</button>
             </div>
             <div class="daily-quote-label">✨ המשפט היומי ✨</div>
             <h1 id="headerQuote">🏢 מערכת ניהול עסקית מתקדמת</h1>
             <p class="header-subtitle">מערכת ניהול עסקית מתקדמת - ניהול הוצאות, תמחור מוצרים ומעקב הזמנות</p>
         </div>
 
-        <div class="nav-tabs">
+        <!-- Mobile: Tab Menu Button -->
+        <div class="mobile-tab-menu">
+            <button class="tab-menu-btn" onclick="toggleTabMenu()">
+                <span class="menu-icon">☰</span>
+                <span class="current-tab-name">📦 ניהול הזמנות</span>
+                <span class="dropdown-arrow">▼</span>
+            </button>
+            <div class="tab-dropdown" id="tabDropdown">
+                <button class="tab-dropdown-item" onclick="selectTab('expenses')">💰 הכנסות והוצאות</button>
+                <button class="tab-dropdown-item" onclick="selectTab('pricing')">💎 תמחור מוצרים</button>
+                <button class="tab-dropdown-item" onclick="selectTab('orders')">📦 ניהול הזמנות</button>
+            </div>
+        </div>
+        
+        <!-- Desktop: Regular Tabs -->
+        <div class="nav-tabs desktop-tabs">
             <button class="nav-tab" onclick="switchTab('expenses')">💰 הכנסות והוצאות</button>
             <button class="nav-tab" onclick="switchTab('pricing')">💎 תמחור מוצרים</button>
             <button class="nav-tab" onclick="switchTab('orders')">📦 ניהול הזמנות</button>
@@ -1560,6 +1575,38 @@
                 item.classList.toggle('expanded');
             }
         }
+        
+        // Mobile tab menu functions
+        function toggleTabMenu() {
+            const menu = document.querySelector('.mobile-tab-menu');
+            if (menu) menu.classList.toggle('open');
+        }
+        
+        function selectTab(tabName) {
+            // Update current tab name display
+            const tabNames = {
+                'expenses': '💰 הכנסות והוצאות',
+                'pricing': '💎 תמחור מוצרים',
+                'orders': '📦 ניהול הזמנות'
+            };
+            const currentTabEl = document.querySelector('.current-tab-name');
+            if (currentTabEl) currentTabEl.textContent = tabNames[tabName] || tabName;
+            
+            // Close dropdown
+            const menu = document.querySelector('.mobile-tab-menu');
+            if (menu) menu.classList.remove('open');
+            
+            // Switch tab
+            if (typeof switchTab === 'function') switchTab(tabName);
+        }
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            const menu = document.querySelector('.mobile-tab-menu');
+            if (menu && !menu.contains(e.target)) {
+                menu.classList.remove('open');
+            }
+        });
         
         // Save mobile price quickly
         async function saveMobilePrice(input) {
