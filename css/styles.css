@@ -1151,6 +1151,8 @@ tbody tr:hover {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
         scrollbar-width: none;
+        position: relative;
+        z-index: 10;
     }
     
     .nav-tabs::-webkit-scrollbar {
@@ -1159,10 +1161,19 @@ tbody tr:hover {
     
     .nav-tab {
         flex: 0 0 auto;
-        padding: 12px 15px;
-        font-size: 0.85em;
+        padding: 14px 18px;
+        font-size: 0.9em;
         white-space: nowrap;
         min-width: auto;
+        min-height: 48px;
+        cursor: pointer;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: rgba(102, 126, 234, 0.3);
+        user-select: none;
+    }
+    
+    .nav-tab:active {
+        background: rgba(102, 126, 234, 0.2);
     }
     
     /* === STEP 3: Tables === */
