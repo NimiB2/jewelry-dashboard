@@ -65,6 +65,14 @@ class OrderManager {
     if (finalPaidInput) {
       finalPaidInput.addEventListener('input', () => this.updateAmountDisplay());
     }
+
+    // Set up discount percent input for auto-calculation
+    const discountPercentInput = document.getElementById('discountPercent');
+    if (discountPercentInput) {
+      const newDiscountPercentInput = discountPercentInput.cloneNode(true);
+      discountPercentInput.parentNode.replaceChild(newDiscountPercentInput, discountPercentInput);
+      newDiscountPercentInput.addEventListener('input', () => this.calculateDiscountFromPercent());
+    }
   }
 
   async handleProductSearch(e) {
@@ -315,25 +323,44 @@ class OrderManager {
         if (finalPaidInput) finalPaidInput.value = '';
         if (discountReasonInput) discountReasonInput.value = '';
         if (discountPercentInput) discountPercentInput.value = '';
-        document.getElementById('calculatedFinalPrice').textContent = '';
+        this.toggleDiscountType('amount');
       }
     }
   }
 
-  // Toggle between discount type (amount vs percent)
   toggleDiscountType(type) {
     const amountGroup = document.getElementById('discountAmountGroup');
     const percentGroup = document.getElementById('discountPercentGroup');
+    const calculatedFinalPriceDiv = document.getElementById('calculatedFinalPrice');
     
     if (type === 'amount') {
-      amountGroup.style.display = 'block';
-      percentGroup.style.display = 'none';
+      if (amountGroup) amountGroup.style.display = 'block';
+      if (percentGroup) percentGroup.style.display = 'none';
+
+      // Clear percent-based fields
+      const discountPercentInput = document.getElementById('discountPercent');
+      if (discountPercentInput) discountPercentInput.value = '';
+      if (calculatedFinalPriceDiv) {
+        calculatedFinalPriceDiv.style.display = 'none';
+        calculatedFinalPriceDiv.innerHTML = '';
+      }
     } else {
-      amountGroup.style.display = 'none';
-      percentGroup.style.display = 'block';
+      if (amountGroup) amountGroup.style.display = 'none';
+      if (percentGroup) percentGroup.style.display = 'block';
+
+      // Clear amount-based field (it will be recalculated from percent)
+      const finalPaidInput = document.getElementById('finalPaidAmount');
+      if (finalPaidInput) finalPaidInput.value = '';
+
       // Recalculate if there's already a percent value
       this.calculateFromPercent();
     }
+
+    // Keep radio button state in sync
+    const amountRadio = document.querySelector('input[name="discountType"][value="amount"]');
+    const percentRadio = document.querySelector('input[name="discountType"][value="percent"]');
+    if (amountRadio) amountRadio.checked = (type === 'amount');
+    if (percentRadio) percentRadio.checked = (type === 'percent');
   }
 
   // Calculate final price from percentage discount
@@ -381,10 +408,45 @@ class OrderManager {
       return parseFloat(document.getElementById('finalPaidAmount')?.value) || calculatedAmount;
     }
   }
+  // Fix orders that don't have a number assigned (legacy orders)
+  async fixOrdersWithoutNumbers(ordersList, repo) {
+    const ordersWithoutNumber = ordersList.filter(o => o.number === undefined || o.number === null);
+    
+    if (ordersWithoutNumber.length === 0) {
+      return; // All orders have numbers
+    }
+    
+    console.log(`🔧 Fixing ${ordersWithoutNumber.length} orders without numbers...`);
+    
+    // Sort by date (oldest first) or by id if no date
+    ordersWithoutNumber.sort((a, b) => {
+      const dateA = new Date(a.date || a.createdAt || 0);
+      const dateB = new Date(b.date || b.createdAt || 0);
+      return dateA - dateB;
+    });
+    
+    // Assign numbers sequentially based on customer name
+    // "דוגמא" orders get 500+ numbers, real orders get 1000+ numbers
+    for (const order of ordersWithoutNumber) {
+      const customerName = order.customer || '';
+      const nextNo = await repo.incrementAndGetForCustomer(customerName);
+      order.number = nextNo;
+      await repo.update(order);
+      const isTest = repo.isTestOrder(customerName);
+      console.log(`  ✅ Order ${order.id} (${isTest ? 'TEST' : 'REAL'}) assigned number: ${nextNo}`);
+    }
+    
+    console.log('🔧 Finished fixing orders without numbers');
+  }
+
   async loadOrders() {
     const repo = window.App.Repositories.OrderRepository;
     // Ensure latest state (await async call)
     orders = await repo.getAll();
+    
+    // Fix orders with undefined number (assign sequential numbers starting from 500)
+    await this.fixOrdersWithoutNumbers(orders, repo);
+    
     const month = document.getElementById('orderMonth').value;
     const filteredOrders = orders.filter(o => {
       const orderDate = new Date(o.date);
@@ -414,7 +476,7 @@ class OrderManager {
       
       row.innerHTML = `
             <td style="text-align: center; font-weight: bold; color: #666;">${index + 1}</td>
-            <td>${o.number}</td>
+            <td>${o.number || '---'}</td>
             <td>${this.formatDateHebrew(o.date)}</td>
             <td>${o.customer}</td>
             <td title="${o.products}">${o.products.length > 50 ? o.products.substring(0, 50) + '...' : o.products}</td>
@@ -446,7 +508,7 @@ class OrderManager {
           <div class="order-card-summary" onclick="toggleOrderExpand(this)">
             <div class="order-card-main">
               <div class="order-card-customer">${o.customer}</div>
-              <div class="order-card-meta">#${o.number} · ${this.formatDateHebrew(o.date)}</div>
+              <div class="order-card-meta">#${o.number || '---'} · ${this.formatDateHebrew(o.date)}</div>
             </div>
             <div class="order-card-stats">
               <div class="order-card-amount">₪${amount.toFixed(0)}</div>
@@ -640,9 +702,64 @@ class OrderManager {
         // Clear discount fields when hiding
         const finalPaidInput = document.getElementById('editFinalPaidAmount');
         const discountReasonInput = document.getElementById('editDiscountReason');
+        const discountPercentInput = document.getElementById('editDiscountPercent');
         if (finalPaidInput) finalPaidInput.value = '';
         if (discountReasonInput) discountReasonInput.value = '';
+        if (discountPercentInput) discountPercentInput.value = '';
+        // Reset to amount mode
+        this.toggleEditDiscountType('amount');
       }
+    }
+  }
+
+  toggleEditDiscountType(type) {
+    const amountGroup = document.getElementById('editDiscountAmountGroup');
+    const percentGroup = document.getElementById('editDiscountPercentGroup');
+    
+    if (type === 'amount') {
+      if (amountGroup) amountGroup.style.display = 'block';
+      if (percentGroup) percentGroup.style.display = 'none';
+      // Clear percent field
+      const discountPercentInput = document.getElementById('editDiscountPercent');
+      if (discountPercentInput) discountPercentInput.value = '';
+      const calcSpan = document.getElementById('editCalculatedFinalPrice');
+      if (calcSpan) calcSpan.textContent = '';
+    } else {
+      if (amountGroup) amountGroup.style.display = 'none';
+      if (percentGroup) percentGroup.style.display = 'block';
+      // Clear amount field
+      const finalPaidInput = document.getElementById('editFinalPaidAmount');
+      if (finalPaidInput) finalPaidInput.value = '';
+    }
+    
+    // Set radio button state
+    const amountRadio = document.querySelector('input[name="editDiscountType"][value="amount"]');
+    const percentRadio = document.querySelector('input[name="editDiscountType"][value="percent"]');
+    if (amountRadio) amountRadio.checked = (type === 'amount');
+    if (percentRadio) percentRadio.checked = (type === 'percent');
+  }
+
+  calculateEditDiscountFromPercent() {
+    const calculatedAmountInput = document.getElementById('editCalculatedAmount');
+    const discountPercentInput = document.getElementById('editDiscountPercent');
+    const finalPaidInput = document.getElementById('editFinalPaidAmount');
+    const calculatedFinalPriceSpan = document.getElementById('editCalculatedFinalPrice');
+    
+    if (!calculatedAmountInput || !discountPercentInput) return;
+    
+    const totalAmount = parseFloat(calculatedAmountInput.value) || 0;
+    const discountPercent = parseFloat(discountPercentInput.value) || 0;
+    
+    if (totalAmount > 0 && discountPercent >= 0 && discountPercent <= 100) {
+      const finalPrice = totalAmount * (1 - discountPercent / 100);
+      // Update the final paid amount field (hidden but used for saving)
+      if (finalPaidInput) finalPaidInput.value = finalPrice.toFixed(2);
+      // Show calculated price
+      if (calculatedFinalPriceSpan) {
+        calculatedFinalPriceSpan.textContent = `מחיר סופי: ₪${finalPrice.toFixed(2)}`;
+      }
+    } else {
+      if (calculatedFinalPriceSpan) calculatedFinalPriceSpan.textContent = '';
     }
   }
 
@@ -731,13 +848,12 @@ class OrderManager {
     // Ensure latest state (await async call)
     orders = await repo.getAll();
     
-    // Use repository-managed order numbering
-    const existingNext = localStorage.getItem('nextOrderNumber');
-    if (existingNext === null && typeof nextOrderNumber !== 'undefined' && Number.isFinite(parseInt(nextOrderNumber, 10))) {
-      await repo.setNextOrderNumber(parseInt(nextOrderNumber, 10));
-    }
-    const nextNo = await repo.incrementAndGet();
-    nextOrderNumber = nextNo + 0; // keep global in sync
+    // Get customer name to determine order number type
+    const customerName = document.getElementById('customerName').value;
+    
+    // Use repository-managed order numbering based on customer name
+    // "דוגמא" orders get 500+ numbers, real orders get 1000+ numbers
+    const nextNo = await repo.incrementAndGetForCustomer(customerName);
     
     // Calculate amounts
     const calculatedAmount = this.selectedProducts.reduce((sum, product) => {
@@ -801,7 +917,7 @@ class OrderManager {
 
     let detailsHTML = `
       <div class="order-details">
-        <h3>הזמנה מספר: ${order.number}</h3>
+        <h3>הזמנה מספר: ${order.number || '---'}</h3>
         <div class="detail-row"><strong>תאריך:</strong> ${this.formatDateHebrew(order.date)}</div>
         <div class="detail-row"><strong>לקוח:</strong> ${order.customer}</div>
         <div class="detail-row"><strong>סטטוס:</strong> ${this.getStatusLabel(order.status)}</div>
@@ -861,7 +977,7 @@ class OrderManager {
     detailsWindow.document.write(`
       <html>
         <head>
-          <title>פרטי הזמנה ${order.number}</title>
+          <title>פרטי הזמנה ${order.number || '---'}</title>
           <meta charset="UTF-8">
           <style>
             body { font-family: Arial, sans-serif; padding: 20px; direction: rtl; }
@@ -1109,6 +1225,14 @@ class OrderManager {
       addProductBtn.parentNode.replaceChild(newAddProductBtn, addProductBtn);
       newAddProductBtn.addEventListener('click', () => this.addEditManualProduct());
     }
+
+    // Set up edit discount percent input for auto-calculation
+    const editDiscountPercentInput = document.getElementById('editDiscountPercent');
+    if (editDiscountPercentInput) {
+      const newEditDiscountPercentInput = editDiscountPercentInput.cloneNode(true);
+      editDiscountPercentInput.parentNode.replaceChild(newEditDiscountPercentInput, editDiscountPercentInput);
+      newEditDiscountPercentInput.addEventListener('input', () => this.calculateEditDiscountFromPercent());
+    }
   }
 
   async handleEditProductSearch(e) {
@@ -1301,7 +1425,7 @@ class OrderManager {
       
       row.innerHTML = `
         <td style="text-align: center; font-weight: bold; color: #666;">${index + 1}</td>
-        <td>${o.number}</td>
+        <td>${o.number || '---'}</td>
         <td>${this.formatDateHebrew(o.date)}</td>
         <td>${o.customer}</td>
         <td title="${o.products}">${o.products.length > 30 ? o.products.substring(0, 30) + '...' : o.products}</td>
@@ -1330,7 +1454,7 @@ class OrderManager {
           <div class="order-card-summary" onclick="toggleOrderExpand(this)">
             <div class="order-card-main">
               <div class="order-card-customer">${o.customer}</div>
-              <div class="order-card-meta">#${o.number} · ${this.formatDateHebrew(o.date)}</div>
+              <div class="order-card-meta">#${o.number || '---'} · ${this.formatDateHebrew(o.date)}</div>
             </div>
             <div class="order-card-stats">
               <div class="order-card-amount">₪${amount.toFixed(0)}</div>

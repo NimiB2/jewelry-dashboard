@@ -839,8 +839,29 @@
                     </label>
                     <div id="editDiscountDetails" style="display: none; margin-top: 10px;">
                         <div class="form-group">
+                            <label>סוג הנחה:</label>
+                            <div style="display: flex; gap: 15px; margin-bottom: 10px;">
+                                <label style="display: flex; align-items: center; gap: 5px;">
+                                    <input type="radio" name="editDiscountType" value="amount" checked onchange="window.App.Managers.orderManager.toggleEditDiscountType('amount')">
+                                    סכום סופי
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 5px;">
+                                    <input type="radio" name="editDiscountType" value="percent" onchange="window.App.Managers.orderManager.toggleEditDiscountType('percent')">
+                                    אחוז הנחה
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group" id="editDiscountAmountGroup">
                             <label>מחיר סופי ששולם:</label>
                             <input type="number" id="editFinalPaidAmount" min="0" step="0.01">
+                        </div>
+                        <div class="form-group" id="editDiscountPercentGroup" style="display: none;">
+                            <label>אחוז הנחה:</label>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <input type="number" id="editDiscountPercent" min="0" max="100" step="1" style="width: 80px;">
+                                <span>%</span>
+                                <span id="editCalculatedFinalPrice" style="color: #28a745; font-weight: bold;"></span>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label>סיבת ההנחה:</label>
@@ -1229,6 +1250,7 @@
             header.className = 'cat-header';
 
             const left = document.createElement('div');
+            left.className = 'cat-header-top';
             left.style.display = 'flex'; left.style.alignItems = 'center'; left.style.gap = '8px';
 
             const titleBtn = document.createElement('button');
@@ -1237,13 +1259,19 @@
             titleBtn.textContent = cat.name || ('קטגוריה ' + (idx+1));
             titleBtn.addEventListener('click', () => {
               // UI-only toggle; should NOT mark settings as dirty
-              cat.collapsed = !cat.collapsed; body.style.display = cat.collapsed ? 'none' : 'block';
+              cat.collapsed = !cat.collapsed;
+              body.style.display = cat.collapsed ? 'none' : 'block';
+              const actionsRow = header.querySelector('.cat-header-actions');
+              if (actionsRow) actionsRow.style.display = cat.collapsed ? 'none' : 'flex';
             });
 
             left.appendChild(titleBtn);
 
             const actions = document.createElement('div');
-            const addSubBtn = document.createElement('button'); addSubBtn.className='icon-btn'; addSubBtn.textContent='➕ תת-קטגוריה';
+            actions.className = 'cat-header-actions';
+            actions.style.display = cat.collapsed ? 'none' : 'flex';
+
+            const addSubBtn = document.createElement('button'); addSubBtn.className='icon-btn'; addSubBtn.textContent='📂'; addSubBtn.title='➕ תת-קטגוריה';
             addSubBtn.addEventListener('click', () => {
               const name = prompt('שם תת-קטגוריה חדשה:');
               if (!name || !name.trim()) return;
@@ -1252,7 +1280,7 @@
               markDirty(); renderCategories();
             });
 
-            const addCatItemBtn = document.createElement('button'); addCatItemBtn.className='icon-btn'; addCatItemBtn.textContent='➕ נתון קטגוריה'; addCatItemBtn.title='הוסף נתון ישירות לקטגוריה';
+            const addCatItemBtn = document.createElement('button'); addCatItemBtn.className='icon-btn'; addCatItemBtn.textContent='➕'; addCatItemBtn.title='➕ נתון';
             addCatItemBtn.addEventListener('click', () => {
               const n = prompt('שם נתון חדש בקטגוריה:');
               if (!n || !n.trim()) return;
@@ -1322,7 +1350,7 @@
               const quickRow = document.createElement('div'); quickRow.className='row';
               const qName = document.createElement('input'); qName.type='text'; qName.placeholder='שם נתון';
               const qVal = document.createElement('input'); qVal.type='number'; qVal.step='0.01'; qVal.placeholder='ערך';
-              const qAdd = document.createElement('button'); qAdd.className='icon-btn'; qAdd.textContent='➕ הוסף';
+              const qAdd = document.createElement('button'); qAdd.className='icon-btn'; qAdd.textContent='➕ נתון';
               qAdd.addEventListener('click', () => {
                 const n = (qName.value||'').trim(); const v = Number(qVal.value||0);
                 if (!n) return; cat.items = cat.items || [];
@@ -1350,7 +1378,9 @@
               sLeft.appendChild(subTitle);
 
               const sActions = document.createElement('div');
-              const addItemBtn = document.createElement('button'); addItemBtn.className='icon-btn'; addItemBtn.textContent='➕ נתון'; addItemBtn.title='הוסף נתון';
+              sActions.className = 'sub-header-actions';
+              sActions.style.display = sub.collapsed ? 'none' : 'flex';
+              const addItemBtn = document.createElement('button'); addItemBtn.className='icon-btn'; addItemBtn.textContent='➕'; addItemBtn.title='➕ נתון';
               addItemBtn.addEventListener('click', () => { sub.items = sub.items || []; sub.items.push({ name: 'שם', value: 0 }); markDirty(); renderCategories(); });
               const editSubBtn = document.createElement('button'); editSubBtn.className='icon-btn'; editSubBtn.textContent='✏️'; editSubBtn.title='עריכת שם תת-קטגוריה';
               editSubBtn.addEventListener('click', () => { const nn = prompt('שם תת-קטגוריה חדש:', sub.name); if (nn && nn.trim()) { sub.name = nn.trim(); markDirty(); renderCategories(); } });
@@ -1366,6 +1396,8 @@
                 // UI-only toggle; should NOT mark settings as dirty
                 sub.collapsed = !sub.collapsed; 
                 subBody.style.display = sub.collapsed ? 'none' : 'block'; 
+                const actionsRow = subHeader.querySelector('.sub-header-actions');
+                if (actionsRow) actionsRow.style.display = sub.collapsed ? 'none' : 'flex';
               });
 
               // Items table (name/value + actions). For 'פירוט אריזה' we also show quantity & manufacturer.
@@ -1445,7 +1477,7 @@
                 qQty = document.createElement('input'); qQty.type='number'; qQty.step='1'; qQty.placeholder='כמות';
                 qMfr = document.createElement('input'); qMfr.type='text'; qMfr.placeholder='יצרן';
               }
-              const qAdd = document.createElement('button'); qAdd.className='icon-btn'; qAdd.textContent='➕ הוסף';
+              const qAdd = document.createElement('button'); qAdd.className='icon-btn'; qAdd.textContent='➕ נתון';
               qAdd.addEventListener('click', () => {
                 const n = (qName.value||'').trim(); const v = Number(qVal.value||0);
                 if (!n) return; sub.items = sub.items || [];
@@ -1525,6 +1557,57 @@
         // Safe open for Settings that does not assume a nav-tab exists
         window.openSettings = function(){
           try {
+            const settingsSection = document.getElementById('settings');
+            const isSettingsOpen = !!(settingsSection && settingsSection.classList.contains('active'));
+
+            const getCurrentTabName = () => {
+              try {
+                const activeTab = document.querySelector('.nav-tab.active');
+                if (activeTab) {
+                  const onClick = activeTab.getAttribute('onclick') || '';
+                  const match = onClick.match(/switchTab\('([^']+)'\)/);
+                  if (match && match[1]) return match[1];
+                }
+              } catch {}
+
+              try {
+                const activeSection = Array.from(document.querySelectorAll('.section.active'))
+                  .find(s => s && s.id && s.id !== 'settings');
+                if (activeSection && activeSection.id) return activeSection.id;
+              } catch {}
+
+              return null;
+            };
+
+            // If settings is already open, close it and return to last non-settings tab
+            if (isSettingsOpen) {
+              try {
+                if (__settingsDirty) {
+                  const ok = confirm('יש שינויים שלא נשמרו. אם תמשיך, השינויים יבוטלו. להמשיך?');
+                  if (!ok) { return; }
+                  discardCategoryChanges();
+                }
+              } catch {}
+
+              const fallbackTab = 'orders';
+              const target = window.__lastNonSettingsTab || getCurrentTabName() || fallbackTab;
+              if (typeof window.switchTab === 'function') {
+                window.switchTab(target);
+              } else {
+                document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+                const sec = document.getElementById(target);
+                if (sec) sec.classList.add('active');
+                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+              }
+              return;
+            }
+
+            // Remember current tab before opening settings
+            const currentTab = getCurrentTabName();
+            if (currentTab && currentTab !== 'settings') {
+              window.__lastNonSettingsTab = currentTab;
+            }
+
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             const sec = document.getElementById('settings');
             if (sec) sec.classList.add('active');

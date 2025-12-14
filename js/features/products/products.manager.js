@@ -355,6 +355,46 @@ class ProductManager {
     }
   }
 
+  async confirmAndUpdateSitePrice(productId, inputElement) {
+    const newPrice = parseFloat(inputElement.value) || 0;
+    const originalPrice = parseFloat(inputElement.dataset.originalPrice) || 0;
+    
+    // If price hasn't changed, do nothing
+    if (newPrice === originalPrice) {
+      return;
+    }
+    
+    // Show confirmation with price change details
+    const confirmed = confirm(`לעדכן מחיר באתר?\n\nמחיר קודם: ₪${originalPrice.toFixed(2)}\nמחיר חדש: ₪${newPrice.toFixed(2)}`);
+    
+    if (confirmed) {
+      await this.updateSitePrice(productId, newPrice);
+    } else {
+      // Restore original value
+      inputElement.value = originalPrice.toFixed(2);
+    }
+  }
+
+  async updateSitePrice(productId, newPrice) {
+    const repo = window.App.Repositories.ProductRepository;
+    products = await repo.getAll();
+    
+    const numericId = parseInt(productId);
+    const price = parseFloat(newPrice) || 0;
+    
+    const index = products.findIndex(p => p.id === numericId);
+    if (index > -1) {
+      products[index].sitePrice = price;
+      await repo.saveAll(products);
+      
+      // Reload to update profit calculations
+      await this.loadProducts();
+      console.log('✅ מחיר באתר עודכן:', products[index].name, '→', price);
+    } else {
+      console.error('❌ מוצר לא נמצא:', productId);
+    }
+  }
+
   showAddProductModal() {
     openModal('addProductModal');
   }

@@ -3,7 +3,8 @@ window.App = window.App || {};
 window.App.Repositories = window.App.Repositories || {};
 (function() {
   const KEY = 'orders';
-  const NEXT_KEY = 'nextOrderNumber';
+  const NEXT_TEST_KEY = 'nextTestOrderNumber';  // For "דוגמא" orders (500+)
+  const NEXT_REAL_KEY = 'nextRealOrderNumber';  // For real orders (1000+)
   const API_URL = '/api/orders';
   
   let useMongoDb = true;
@@ -28,14 +29,31 @@ window.App.Repositories = window.App.Repositories || {};
     return list || [];
   }
 
-  function getLocalNextOrderNumber() {
-    const n = parseInt(localStorage.getItem(NEXT_KEY), 10);
+  // Test orders (דוגמא) - start from 500
+  function getLocalNextTestOrderNumber() {
+    const n = parseInt(localStorage.getItem(NEXT_TEST_KEY), 10);
+    return Number.isFinite(n) && n >= 500 ? n : 500;
+  }
+
+  function setLocalNextTestOrderNumber(n) {
+    localStorage.setItem(NEXT_TEST_KEY, n);
+    return n;
+  }
+
+  // Real orders - start from 1000
+  function getLocalNextRealOrderNumber() {
+    const n = parseInt(localStorage.getItem(NEXT_REAL_KEY), 10);
     return Number.isFinite(n) && n >= 1000 ? n : 1000;
   }
 
-  function setLocalNextOrderNumber(n) {
-    localStorage.setItem(NEXT_KEY, n);
+  function setLocalNextRealOrderNumber(n) {
+    localStorage.setItem(NEXT_REAL_KEY, n);
     return n;
+  }
+
+  // Check if customer name indicates a test order
+  function isTestOrder(customerName) {
+    return customerName && customerName.trim().startsWith('דוגמא');
   }
 
   // MongoDB functions
@@ -152,57 +170,63 @@ window.App.Repositories = window.App.Repositories || {};
     }
   }
 
-  async function getNextOrderNumber() {
-    if (!useMongoDb) {
-      return getLocalNextOrderNumber();
-    }
+  // Allocate order number based on customer name
+  async function incrementAndGetForCustomer(customerName) {
+    const isTest = isTestOrder(customerName);
     
-    try {
-      const response = await fetch(`${API_URL}/meta/next-number`);
-      if (!response.ok) throw new Error('Failed to fetch');
-      const data = await response.json();
-      
-      // Sync to localStorage
-      setLocalNextOrderNumber(data.nextOrderNumber);
-      return data.nextOrderNumber;
-    } catch (error) {
-      console.warn('⚠️  MongoDB unavailable, using localStorage:', error.message);
-      useMongoDb = false;
-      return getLocalNextOrderNumber();
-    }
-  }
-
-  async function setNextOrderNumber(n) {
-    setLocalNextOrderNumber(n);
-    // Note: MongoDB manages this automatically via allocate-number
-    return n;
-  }
-
-  async function incrementAndGet() {
     if (!useMongoDb) {
-      const next = getLocalNextOrderNumber();
-      setLocalNextOrderNumber(next + 1);
-      return next;
+      // Local fallback
+      if (isTest) {
+        const next = getLocalNextTestOrderNumber();
+        setLocalNextTestOrderNumber(next + 1);
+        console.log(`📝 Test order number allocated (local): ${next}`);
+        return next;
+      } else {
+        const next = getLocalNextRealOrderNumber();
+        setLocalNextRealOrderNumber(next + 1);
+        console.log(`📝 Real order number allocated (local): ${next}`);
+        return next;
+      }
     }
     
     try {
       const response = await fetch(`${API_URL}/meta/allocate-number`, {
-        method: 'POST'
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isTest })
       });
       
       if (!response.ok) throw new Error('Failed to allocate');
       const data = await response.json();
       
       // Sync to localStorage
-      setLocalNextOrderNumber(data.orderNumber + 1);
+      if (isTest) {
+        setLocalNextTestOrderNumber(data.orderNumber + 1);
+      } else {
+        setLocalNextRealOrderNumber(data.orderNumber + 1);
+      }
+      
+      console.log(`📝 ${isTest ? 'Test' : 'Real'} order number allocated (MongoDB): ${data.orderNumber}`);
       return data.orderNumber;
     } catch (error) {
       console.warn('⚠️  MongoDB allocate failed, using localStorage:', error.message);
       useMongoDb = false;
-      const next = getLocalNextOrderNumber();
-      setLocalNextOrderNumber(next + 1);
-      return next;
+      
+      if (isTest) {
+        const next = getLocalNextTestOrderNumber();
+        setLocalNextTestOrderNumber(next + 1);
+        return next;
+      } else {
+        const next = getLocalNextRealOrderNumber();
+        setLocalNextRealOrderNumber(next + 1);
+        return next;
+      }
     }
+  }
+
+  // Legacy function - defaults to test order
+  async function incrementAndGet() {
+    return incrementAndGetForCustomer('דוגמא');
   }
 
   // Initialize
@@ -221,8 +245,8 @@ window.App.Repositories = window.App.Repositories || {};
     add,
     update,
     removeById,
-    getNextOrderNumber,
-    setNextOrderNumber,
-    incrementAndGet
+    incrementAndGet,
+    incrementAndGetForCustomer,
+    isTestOrder
   };
 })();

@@ -33,13 +33,17 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-// Get next order number
+// Get next order numbers (both test and real)
 router.get('/meta/next-number', async (req, res) => {
     try {
         const db = await getDatabase();
-        const meta = await db.collection('metadata').findOne({ key: 'nextOrderNumber' });
-        const nextNumber = meta ? meta.value : 1000;
-        res.json({ nextOrderNumber: nextNumber });
+        const testMeta = await db.collection('metadata').findOne({ key: 'nextTestOrderNumber' });
+        const realMeta = await db.collection('metadata').findOne({ key: 'nextRealOrderNumber' });
+        
+        res.json({ 
+            nextTestOrderNumber: testMeta ? testMeta.value : 500,
+            nextRealOrderNumber: realMeta ? realMeta.value : 1000
+        });
     } catch (error) {
         console.error('Error fetching next order number:', error);
         res.status(500).json({ error: 'Failed to fetch next order number' });
@@ -47,13 +51,19 @@ router.get('/meta/next-number', async (req, res) => {
 });
 
 // Allocate next order number (atomic operation)
+// isTest: true = test order (דוגמא) starts from 500
+// isTest: false = real order starts from 1000
 router.post('/meta/allocate-number', async (req, res) => {
     try {
         const db = await getDatabase();
+        const { isTest } = req.body || {};
+        
+        const metaKey = isTest ? 'nextTestOrderNumber' : 'nextRealOrderNumber';
+        const startValue = isTest ? 500 : 1000;
         
         // Use findOneAndUpdate with $inc for atomic increment
         const result = await db.collection('metadata').findOneAndUpdate(
-            { key: 'nextOrderNumber' },
+            { key: metaKey },
             { $inc: { value: 1 } },
             { 
                 upsert: true, 
@@ -62,16 +72,17 @@ router.post('/meta/allocate-number', async (req, res) => {
             }
         );
         
-        const allocatedNumber = result.value ? result.value.value : 1000;
+        const allocatedNumber = result.value ? result.value.value : startValue;
         
-        // If this was the first allocation, ensure we start from 1000
+        // If this was the first allocation, ensure we start from correct value
         if (!result.value) {
             await db.collection('metadata').updateOne(
-                { key: 'nextOrderNumber' },
-                { $set: { value: 1001 } }
+                { key: metaKey },
+                { $set: { value: startValue + 1 } }
             );
         }
         
+        console.log(`📝 ${isTest ? 'Test' : 'Real'} order number allocated: ${allocatedNumber}`);
         res.json({ orderNumber: allocatedNumber });
     } catch (error) {
         console.error('Error allocating order number:', error);

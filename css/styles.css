@@ -1072,6 +1072,32 @@ tbody tr:hover {
     position: relative;
 }
 
+/* Inline price editing */
+.inline-price-edit {
+    width: 85px !important;
+    text-align: center !important;
+    border: 2px solid #e0e0e0 !important;
+    border-radius: 6px !important;
+    padding: 6px 8px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    color: #333 !important;
+    background: #fff !important;
+    transition: all 0.2s ease !important;
+}
+
+.inline-price-edit:hover {
+    border-color: #667eea !important;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1) !important;
+}
+
+.inline-price-edit:focus {
+    border-color: #667eea !important;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2) !important;
+    outline: none !important;
+    background: #f8f9ff !important;
+}
+
 /* FAB - Scroll to Top */
 .fab-scroll-top {
     position: fixed;
@@ -1528,6 +1554,37 @@ tbody tr:hover {
         border-radius: 12px !important;
         width: calc(100% - 16px) !important;
     }
+
+    #addOrderModal.modal.active {
+        align-items: flex-start !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+        padding-top: 10px;
+        padding-bottom: 10px;
+    }
+
+    #addOrderModal .modal-content {
+        padding: 8px !important;
+        max-height: none !important;
+        overflow-y: visible !important;
+    }
+
+    #addOrderModal .modal-header {
+        font-size: 1.05em !important;
+        margin-bottom: 10px !important;
+    }
+
+    #addOrderModal .form-group {
+        margin-bottom: 10px !important;
+    }
+
+    #addOrderModal .form-group label {
+        margin-bottom: 4px !important;
+    }
+
+    #addOrderModal .discount-section {
+        padding: 8px !important;
+    }
     
     #addOrderModal .form-row,
     #editOrderModal .form-row {
@@ -1832,6 +1889,92 @@ tbody tr:hover {
     .nav-tab {
         padding: 10px 12px;
         font-size: 0.8em;
+    }
+
+    #addOrderModal .modal-content {
+        padding: 6px !important;
+    }
+
+    #addOrderModal .modal-header {
+        font-size: 0.95em !important;
+        margin-bottom: 6px !important;
+    }
+
+    #addOrderModal .form-group {
+        margin-bottom: 6px !important;
+    }
+
+    #addOrderModal label {
+        font-size: 12px !important;
+    }
+
+    #addOrderModal input,
+    #addOrderModal select {
+        padding: 6px 8px !important;
+        font-size: 13px !important;
+        min-height: 34px !important;
+    }
+
+    #addOrderModal textarea {
+        padding: 6px 8px !important;
+        font-size: 13px !important;
+        min-height: 40px !important;
+        resize: none;
+    }
+
+    #addOrderModal .products-selection {
+        padding: 8px !important;
+    }
+
+    #addOrderModal .products-input-container {
+        margin-bottom: 6px !important;
+    }
+
+    #addOrderModal #addProductBtn {
+        padding: 6px 10px !important;
+        min-height: 34px !important;
+        font-size: 12px !important;
+    }
+
+    #addOrderModal .selected-products-list {
+        margin-top: 8px !important;
+    }
+
+    #addOrderModal .selected-product-item {
+        padding: 6px !important;
+        margin-bottom: 6px !important;
+    }
+
+    #addOrderModal .selected-product-details {
+        font-size: 11px !important;
+    }
+
+    #addOrderModal .remove-product-btn {
+        padding: 4px 8px !important;
+        font-size: 11px !important;
+    }
+
+    #addOrderModal .amount-container {
+        gap: 6px !important;
+    }
+
+    #addOrderModal .amount-note {
+        display: none !important;
+    }
+
+    #addOrderModal .discount-section {
+        margin: 8px 0 !important;
+        padding: 6px !important;
+    }
+
+    #addOrderModal .modal-footer {
+        margin-top: 8px !important;
+    }
+
+    #addOrderModal .modal-footer button {
+        padding: 8px 12px !important;
+        min-height: 36px !important;
+        font-size: 13px !important;
     }
     
     /* Stats - single column on very small screens */
