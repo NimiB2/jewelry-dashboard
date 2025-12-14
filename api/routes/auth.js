@@ -6,6 +6,17 @@ const { getDatabase } = require('../../config/database');
 router.get('/check/:uid', async (req, res) => {
     try {
         const { uid } = req.params;
+
+        // Temporary mode: allow any Firebase-authenticated user (skip MongoDB authorization list)
+        // To restore original behavior set BYPASS_AUTHORIZED_USERS=false/empty.
+        if (process.env.BYPASS_AUTHORIZED_USERS === 'true') {
+            return res.json({ 
+                authorized: true,
+                user: {
+                    uid
+                }
+            });
+        }
         
         if (!uid) {
             return res.status(400).json({ authorized: false, error: 'UID is required' });

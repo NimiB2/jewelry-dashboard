@@ -11,6 +11,9 @@ function hashPassword(password) {
 // Check if user is authenticated (supports both Firebase and legacy tokens)
 async function isAuthenticated(req, res, next) {
     const authHeader = req.headers.authorization;
+    // If true, any Firebase-authenticated user is allowed (skip MongoDB authorizedUsers check).
+    // Use this only temporarily (e.g. interviews/demo). To restore original behavior set it to false/empty.
+    const bypassAuthorizedUsers = process.env.BYPASS_AUTHORIZED_USERS === 'true';
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return res.status(401).json({ error: 'Unauthorized - No token provided' });
@@ -24,21 +27,32 @@ async function isAuthenticated(req, res, next) {
             const result = await verifyIdToken(token);
             
             if (result.valid) {
-                // Check if user is in authorizedUsers collection
-                const db = await getDatabase();
-                const authorizedUser = await db.collection('authorizedUsers').findOne({ uid: result.uid });
-                
-                if (authorizedUser) {
+                // Temporary mode: allow any Firebase user (skip MongoDB authorization list)
+                if (bypassAuthorizedUsers) {
                     req.user = {
                         uid: result.uid,
                         email: result.email,
                         name: result.name
                     };
                     return next();
-                } else {
-                    console.log(`❌ User ${result.email} not in authorizedUsers`);
-                    return res.status(403).json({ error: 'Forbidden - User not authorized' });
                 }
+
+                // Normal mode: Check if user is in authorizedUsers collection
+                const db = await getDatabase();
+                const authorizedUser = await db.collection('authorizedUsers').findOne({ uid: result.uid });
+
+                if (authorizedUser) {
+                    req.user = {
+                        uid: result.uid,
+                        email: result.email,
+                        name: result.name,
+                        role: authorizedUser.role
+                    };
+                    return next();
+                }
+
+                console.log(`❌ User ${result.email} not in authorizedUsers`);
+                return res.status(403).json({ error: 'Forbidden - User not authorized' });
             }
         } catch (error) {
             console.error('Firebase token verification error:', error.message);
