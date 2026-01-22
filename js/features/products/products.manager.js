@@ -339,19 +339,14 @@ class ProductManager {
     const filterSelect = document.getElementById('filterCollection');
     if (!filterSelect) return;
     
-    // Get all unique collections from products
-    const allCollections = new Set();
-    products.forEach(p => {
-      if (p.collections && Array.isArray(p.collections)) {
-        p.collections.forEach(c => allCollections.add(c));
-      }
-    });
+    // Get all collections from system (not just from products)
+    const allCollections = getAllCollectionsSync();
     
     // Clear and rebuild options
     const currentValue = filterSelect.value;
     filterSelect.innerHTML = '<option value="">הכל</option>';
     
-    Array.from(allCollections).sort().forEach(collection => {
+    allCollections.forEach(collection => {
       const option = document.createElement('option');
       option.value = collection;
       option.textContent = collection;
@@ -359,7 +354,7 @@ class ProductManager {
     });
     
     // Restore selection if still valid
-    if (currentValue && allCollections.has(currentValue)) {
+    if (currentValue && allCollections.includes(currentValue)) {
       filterSelect.value = currentValue;
     }
   }

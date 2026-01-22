@@ -184,6 +184,11 @@ async function addCollection() {
     renderCollectionsManager();
     await renderCollectionsChecklist();
     
+    // Update collections filter in products list
+    if (window.App && App.Managers && App.Managers.productManager) {
+        App.Managers.productManager.updateCollectionsFilter();
+    }
+    
     console.log('✅ Collection added:', name);
 }
 
@@ -203,6 +208,11 @@ async function renameCollection(oldName, newName) {
     await saveCollections(collections);
     renderCollectionsManager();
     await renderCollectionsChecklist();
+    
+    // Update collections filter in products list
+    if (window.App && App.Managers && App.Managers.productManager) {
+        App.Managers.productManager.updateCollectionsFilter();
+    }
 }
 
 async function deleteCollection(name) {
@@ -220,6 +230,11 @@ async function deleteCollection(name) {
     await saveCollections(collections);
     renderCollectionsManager();
     await renderCollectionsChecklist();
+    
+    // Update collections filter in products list
+    if (window.App && App.Managers && App.Managers.productManager) {
+        App.Managers.productManager.updateCollectionsFilter();
+    }
 }
 
 function renderCollectionsManager() {
