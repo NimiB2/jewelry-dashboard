@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     if (typeof initializeSettings === 'function') initializeSettings();
     if (typeof renderCollectionsManager === 'function') renderCollectionsManager();
-    if (typeof renderCollectionsChecklist === 'function') renderCollectionsChecklist();
+    if (typeof renderCollectionsChecklist === 'function') await renderCollectionsChecklist();
     if (typeof updatePricing === 'function') updatePricing();
     if (typeof setupEventListeners === 'function') setupEventListeners();
     

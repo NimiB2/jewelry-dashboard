@@ -182,7 +182,7 @@ async function addCollection() {
     
     // Re-render both sections
     renderCollectionsManager();
-    renderCollectionsChecklist();
+    await renderCollectionsChecklist();
     
     console.log('✅ Collection added:', name);
 }
@@ -202,7 +202,7 @@ async function renameCollection(oldName, newName) {
     collections[index] = newName.trim();
     await saveCollections(collections);
     renderCollectionsManager();
-    renderCollectionsChecklist();
+    await renderCollectionsChecklist();
 }
 
 async function deleteCollection(name) {
@@ -219,7 +219,7 @@ async function deleteCollection(name) {
     const collections = (await getAllCollections()).filter(c => c !== name);
     await saveCollections(collections);
     renderCollectionsManager();
-    renderCollectionsChecklist();
+    await renderCollectionsChecklist();
 }
 
 function renderCollectionsManager() {
@@ -350,7 +350,7 @@ function renderCollectionsManager() {
 }
 
 // Collections checklist render: simple native dropdown (single select) listing all collections
-function renderCollectionsChecklist() {
+async function renderCollectionsChecklist() {
     const container = document.getElementById('collectionsChecklist');
     if (!container) {
         console.log('collectionsChecklist container not found');
@@ -401,7 +401,7 @@ function renderCollectionsChecklist() {
     facade.appendChild(facadeLabel);
     facade.appendChild(facadeArrow);
 
-    const all = getAllCollections();
+    const all = await getAllCollections();
     // Ensure 'כללי' is present first
     const ordered = Array.from(new Set(['כללי', ...all]));
 
@@ -549,20 +549,20 @@ function renderCollectionsChecklist() {
 }
 
 // Initialize collections on page load
-function initializeCollections() {
+async function initializeCollections() {
     // Ensure collections are initialized with permanent ones
-    getAllCollections();
+    await getAllCollections();
     // Render both sections
     renderCollectionsManager();
-    renderCollectionsChecklist();
+    await renderCollectionsChecklist();
 }
 
 // Auto-initialize when DOM is ready and scroll to top
-function onPageLoad() {
+async function onPageLoad() {
     // Scroll to top of page
     window.scrollTo(0, 0);
     // Initialize collections
-    initializeCollections();
+    await initializeCollections();
     // Initialize order manager if it exists
     if (window.App && App.Managers && App.Managers.orderManager) {
         App.Managers.orderManager.initializeOrderForm();
@@ -1405,17 +1405,46 @@ function addAdditionRow() {
     const list = document.getElementById('additionsList');
     if (!list) return;
     const row = document.createElement('div');
-    row.className = 'row';
+    row.className = 'row addition-row';
     row.style.gap = '8px';
+    row.style.marginBottom = '4px';
     row.innerHTML = `
-      <input type="text" class="addition-name" placeholder="שם התוספת" />
-      <input type="number" class="addition-price" step="0.01" placeholder="מחיר" />
+      <select class="addition-type" style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+        <option value="">בחר סוג תוספת...</option>
+        <option value="עגילים">עגילים</option>
+        <option value="שרשרת">שרשרת</option>
+        <option value="ציפוי">ציפוי</option>
+        <option value="אבנים">אבנים</option>
+        <option value="שיבוץ">שיבוץ</option>
+        <option value="אחר">אחר</option>
+      </select>
+      <input type="text" class="addition-name-other" placeholder="פרט..." style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; display: none;" />
+      <input type="number" class="addition-price" step="0.01" placeholder="מחיר" style="width: 100px; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" />
       <button type="button" class="btn-small" aria-label="remove" title="הסר">🗑️</button>
     `;
-    const [nameInp, priceInp, removeBtn] = row.querySelectorAll('input,button');
+    
+    const typeSelect = row.querySelector('.addition-type');
+    const otherInput = row.querySelector('.addition-name-other');
+    const priceInp = row.querySelector('.addition-price');
+    const removeBtn = row.querySelector('button');
+    
+    // Show/hide "other" text field based on selection
+    typeSelect.addEventListener('change', () => {
+        if (typeSelect.value === 'אחר') {
+            otherInput.style.display = 'block';
+            otherInput.focus();
+        } else {
+            otherInput.style.display = 'none';
+            otherInput.value = '';
+        }
+        updatePricing();
+    });
+    
+    otherInput.addEventListener('input', updatePricing);
     priceInp.addEventListener('input', updatePricing);
     priceInp.addEventListener('change', updatePricing);
     removeBtn.addEventListener('click', () => { row.remove(); updatePricing(); });
+    
     list.appendChild(row);
     
     // Trigger update immediately to show the new row

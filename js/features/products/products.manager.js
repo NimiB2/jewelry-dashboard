@@ -19,9 +19,18 @@ class ProductManager {
     // Ensure latest state
     products = await repo.getAll();
     // Gather additions for persistence (optional, lightweight)
-    const additions = Array.from(document.querySelectorAll('#additionsList .row')).map(r => {
-      const name = r.querySelector('.addition-name')?.value?.trim() || '';
-      const price = parseFloat(r.querySelector('.addition-price')?.value || '0') || 0;
+    const additions = Array.from(document.querySelectorAll('#additionsList .addition-row')).map(r => {
+      const typeSelect = r.querySelector('.addition-type');
+      const otherInput = r.querySelector('.addition-name-other');
+      const priceInput = r.querySelector('.addition-price');
+      
+      let name = typeSelect?.value?.trim() || '';
+      // If "אחר" is selected, use the custom text field value
+      if (name === 'אחר' && otherInput) {
+        name = otherInput.value?.trim() || 'אחר';
+      }
+      
+      const price = parseFloat(priceInput?.value || '0') || 0;
       return { name, price };
     }).filter(a => a.name || a.price);
 
@@ -672,18 +681,49 @@ class ProductManager {
     const list = document.getElementById('editAdditionsList');
     if (!list) return;
     
+    // Determine if name is a predefined option or "other"
+    const predefinedOptions = ['עגילים', 'שרשרת', 'ציפוי', 'אבנים', 'שיבוץ'];
+    const isPredefined = predefinedOptions.includes(name);
+    const selectedValue = isPredefined ? name : (name ? 'אחר' : '');
+    const otherValue = isPredefined ? '' : name;
+    
     const row = document.createElement('div');
-    row.className = 'row';
+    row.className = 'row addition-row';
     row.style.gap = '8px';
     row.style.marginBottom = '4px';
     row.innerHTML = `
-      <input type="text" class="addition-name" placeholder="שם התוספת" value="${name}" />
-      <input type="number" class="addition-price" step="0.01" placeholder="מחיר" value="${price}" />
+      <select class="addition-type" style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+        <option value="">בחר סוג תוספת...</option>
+        <option value="עגילים" ${selectedValue === 'עגילים' ? 'selected' : ''}>עגילים</option>
+        <option value="שרשרת" ${selectedValue === 'שרשרת' ? 'selected' : ''}>שרשרת</option>
+        <option value="ציפוי" ${selectedValue === 'ציפוי' ? 'selected' : ''}>ציפוי</option>
+        <option value="אבנים" ${selectedValue === 'אבנים' ? 'selected' : ''}>אבנים</option>
+        <option value="שיבוץ" ${selectedValue === 'שיבוץ' ? 'selected' : ''}>שיבוץ</option>
+        <option value="אחר" ${selectedValue === 'אחר' ? 'selected' : ''}>אחר</option>
+      </select>
+      <input type="text" class="addition-name-other" placeholder="פרט..." value="${otherValue}" style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; display: ${selectedValue === 'אחר' ? 'block' : 'none'};" />
+      <input type="number" class="addition-price" step="0.01" placeholder="מחיר" value="${price}" style="width: 100px; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" />
       <button type="button" class="btn-small" aria-label="remove" title="הסר">🗑️</button>
     `;
     
-    const [nameInp, priceInp, removeBtn] = row.querySelectorAll('input,button');
-    // Pass true to update site price when user changes additions
+    const typeSelect = row.querySelector('.addition-type');
+    const otherInput = row.querySelector('.addition-name-other');
+    const priceInp = row.querySelector('.addition-price');
+    const removeBtn = row.querySelector('button');
+    
+    // Show/hide "other" text field based on selection
+    typeSelect.addEventListener('change', () => {
+      if (typeSelect.value === 'אחר') {
+        otherInput.style.display = 'block';
+        otherInput.focus();
+      } else {
+        otherInput.style.display = 'none';
+        otherInput.value = '';
+      }
+      this.updateEditPricing(true);
+    });
+    
+    otherInput.addEventListener('input', () => this.updateEditPricing(true));
     priceInp.addEventListener('input', () => this.updateEditPricing(true));
     priceInp.addEventListener('change', () => this.updateEditPricing(true));
     removeBtn.addEventListener('click', () => { 

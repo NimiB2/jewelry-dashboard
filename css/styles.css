@@ -259,6 +259,29 @@ button:active {
     font-size: 14px;
 }
 
+/* Additions row styling - Desktop */
+.addition-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.addition-row .addition-type {
+    flex: 1;
+    min-width: 150px;
+}
+
+.addition-row .addition-name-other {
+    flex: 1;
+    min-width: 150px;
+}
+
+.addition-row .addition-price {
+    width: 100px;
+    flex-shrink: 0;
+}
+
 /* Cards */
 .card {
     background: white;
@@ -3457,5 +3480,25 @@ tbody tr:hover {
         border: 1px solid #eee;
         color: #777;
         font-size: 12px;
+    }
+
+    /* Additions row mobile optimization */
+    .addition-row {
+        display: flex;
+        flex-direction: column !important;
+        gap: 8px !important;
+    }
+
+    .addition-row .addition-type,
+    .addition-row .addition-name-other,
+    .addition-row .addition-price {
+        width: 100% !important;
+        flex: none !important;
+    }
+
+    .addition-row button {
+        width: 100%;
+        padding: 10px !important;
+        font-size: 16px !important;
     }
 }
