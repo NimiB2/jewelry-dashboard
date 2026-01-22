@@ -314,14 +314,30 @@
                     </div>
                 </div>
 
-                <!-- Middle: Discounts and Filters -->
+                <!-- Middle: Discounts and Name Search -->
                 <div class="card">
-                    <div class="card-header">בדיקת מחירים והנחות + סינון</div>
-                    <div class="form-row">
-                        <div>
-                            <label>הנחה כללית (%):</label>
-                            <input type="number" id="listDiscountPercent" min="0" max="100" value="0" onchange="loadProducts()" />
+                    <div class="card-header" style="cursor:pointer;" onclick="toggleDiscountSection()">
+                        <span id="discountToggleIcon">▶</span> בדיקת מחירים והנחות
+                    </div>
+                    <div id="discountSectionContent" style="display:none;">
+                        <div class="form-row">
+                            <div>
+                                <label>הנחה כללית (%):</label>
+                                <input type="number" id="listDiscountPercent" min="0" max="100" value="0" onchange="loadProducts()" />
+                            </div>
+                            <div style="min-width:220px;">
+                                <label>חיפוש שם ספציפי:</label>
+                                <input type="text" id="filterName" placeholder="שם התכשיט" oninput="loadProducts()" />
+                            </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Bottom: Products List -->
+                <div class="card">
+                    <div class="card-header">רשימת מוצרים</div>
+                    <!-- Filters Row -->
+                    <div class="products-filters-row">
                         <div>
                             <label>סוג מוצר:</label>
                             <select id="filterType" onchange="loadProducts()">
@@ -350,16 +366,7 @@
                                 <option value="">הכל</option>
                             </select>
                         </div>
-                        <div style="min-width:220px;">
-                            <label>חיפוש שם ספציפי:</label>
-                            <input type="text" id="filterName" placeholder="שם התכשיט" oninput="loadProducts()" />
-                        </div>
                     </div>
-                </div>
-
-                <!-- Bottom: Products List -->
-                <div class="card">
-                    <div class="card-header">רשימת מוצרים</div>
                     <!-- Mobile: Cards View -->
                     <div id="productCardsContainer" class="product-cards-container"></div>
                     <!-- Desktop: Table View -->

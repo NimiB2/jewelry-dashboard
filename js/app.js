@@ -1585,6 +1585,20 @@ function restoreOrder(id) {
     return App.Managers.orderManager.restoreOrder(id);
 }
 
+// Toggle Discount Section
+function toggleDiscountSection() {
+    const content = document.getElementById('discountSectionContent');
+    const icon = document.getElementById('discountToggleIcon');
+    
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+        icon.textContent = '▼';
+    } else {
+        content.style.display = 'none';
+        icon.textContent = '▶';
+    }
+}
+
 // Modal Functions
 function openModal(id) {
     document.getElementById(id).classList.add('active');

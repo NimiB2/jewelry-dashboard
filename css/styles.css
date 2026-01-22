@@ -282,6 +282,42 @@ button:active {
     flex-shrink: 0;
 }
 
+/* Products filters row - Desktop */
+.products-filters-row {
+    display: flex;
+    gap: 15px;
+    padding: 0 20px 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.products-filters-row > div {
+    flex: 1;
+    min-width: 150px;
+}
+
+.products-filters-row label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 6px;
+    color: #333;
+}
+
+.products-filters-row select {
+    width: 100%;
+    padding: 10px;
+    font-size: 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    transition: all 0.3s;
+}
+
+.products-filters-row select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
 /* Cards */
 .card {
     background: white;
@@ -3500,5 +3536,34 @@ tbody tr:hover {
         width: 100%;
         padding: 10px !important;
         font-size: 16px !important;
+    }
+
+    /* Products filters row - keep in one row on mobile */
+    .products-filters-row {
+        display: flex;
+        gap: 8px;
+        padding: 0 12px 15px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .products-filters-row > div {
+        flex: 1;
+        min-width: 120px;
+    }
+
+    .products-filters-row label {
+        display: block;
+        font-size: 13px;
+        margin-bottom: 4px;
+        color: #666;
+    }
+
+    .products-filters-row select {
+        width: 100%;
+        padding: 8px;
+        font-size: 14px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
     }
 }
